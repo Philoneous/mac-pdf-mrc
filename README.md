@@ -24,7 +24,8 @@ Einstellungen (je Profil, *Standardwerte wiederherstellen* setzt sie zurück):
 | **Seitenauswahl** | | |
 | Auch PDFs mit digitalen Seiten bearbeiten | an | digitale Seiten bleiben unverändert; aus = nur reine Scan-PDFs |
 | Fotoseiten unverändert lassen | an | MRC verschlechtert Fotos sichtbar |
-| Foto unter Farbflächenanteil (%) | 60 | Anteil der Fläche, der sich mit 8 einheitlichen Farben darstellen lässt; grau oder farbig hinterlegter Text gilt als Dokument (Testseiten: Dokumente 84–98 %, Fotos 11–25 %) |
+| Texterkennung prüft unter Papierfläche (%) | 50 | Seiten mit weniger Papierfläche (Fotos, farbig hinterlegter Text) gelten nur mit genug erkanntem Text als Dokument |
+| Foto unter sicher erkannten Wörtern | 10 | Wörter mit ≥ 3 Zeichen und hoher Erkennungssicherheit |
 | Vektorisierte Scans rastern | an | Seiten ohne Bild und Text aus Tausenden Vektorelementen werden gerastert und durchsuchbar |
 | Vektorisiert ab Elementen / Rasterauflösung | 1000 / 300 dpi | |
 | **Texterkennung** | | |

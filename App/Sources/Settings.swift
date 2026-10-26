@@ -19,7 +19,8 @@ struct Profile: Codable, Equatable {
     // Seitenauswahl
     var mixedPdfs = true
     var skipPhotos = true
-    var photoFlatPercent = 60.0
+    var photoPaperPercent = 50.0
+    var photoMinWords = 10
     var vectorPages = true
     var vectorMinItems = 1000
     var vectorDpi = 300
@@ -55,7 +56,8 @@ struct Profile: Codable, Equatable {
         deskewMaxAngle = try value(.deskewMaxAngle, d.deskewMaxAngle)
         mixedPdfs = try value(.mixedPdfs, d.mixedPdfs)
         skipPhotos = try value(.skipPhotos, d.skipPhotos)
-        photoFlatPercent = try value(.photoFlatPercent, d.photoFlatPercent)
+        photoPaperPercent = try value(.photoPaperPercent, d.photoPaperPercent)
+        photoMinWords = try value(.photoMinWords, d.photoMinWords)
         vectorPages = try value(.vectorPages, d.vectorPages)
         vectorMinItems = try value(.vectorMinItems, d.vectorMinItems)
         vectorDpi = try value(.vectorDpi, d.vectorDpi)
@@ -83,7 +85,8 @@ struct Profile: Codable, Equatable {
             "MRC_DESKEW_MAX_ANGLE": String(deskewMaxAngle),
             "MRC_MIXED_PDFS": flag(mixedPdfs),
             "MRC_SKIP_PHOTOS": flag(skipPhotos),
-            "MRC_PHOTO_FLAT_PERCENT": String(photoFlatPercent),
+            "MRC_PHOTO_PAPER_PERCENT": String(photoPaperPercent),
+            "MRC_PHOTO_MIN_WORDS": String(photoMinWords),
             "MRC_VECTOR_PAGES": flag(vectorPages),
             "MRC_VECTOR_MIN_ITEMS": String(vectorMinItems),
             "MRC_VECTOR_DPI": String(vectorDpi),

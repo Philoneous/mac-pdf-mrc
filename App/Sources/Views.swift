@@ -180,12 +180,15 @@ struct ProfileForm: View {
                 Toggle("Auch PDFs mit digitalen Seiten bearbeiten", isOn: $profile.mixedPdfs)
                     .help("Digitale Seiten bleiben dabei unverändert. Aus: nur PDFs, die ausschließlich aus Scans bestehen.")
                 Toggle("Fotoseiten unverändert lassen", isOn: $profile.skipPhotos)
-                    .help("MRC verschlechtert Fotos sichtbar. Erkannt daran, dass sie sich nicht mit wenigen "
-                          + "einheitlichen Farben darstellen lassen; grau oder farbig hinterlegter Text gilt als Dokument.")
-                TextField("Foto unter Farbflächenanteil (%)", value: $profile.photoFlatPercent,
+                    .help("MRC verschlechtert Fotos sichtbar. Seiten mit wenig Papierfläche (Fotos, aber auch farbig "
+                          + "hinterlegter Text) gelten nur mit genug erkanntem Text als Dokument.")
+                TextField("Texterkennung prüft unter Papierfläche (%)", value: $profile.photoPaperPercent,
                           format: .number.precision(.fractionLength(0...1)))
                     .disabled(!profile.skipPhotos)
-                    .help("Testseiten: Dokumente 84–98 %, Fotos 11–25 %. Standard: 60.")
+                    .help("Gemessen: Dokumente auf weißem Papier 61–98 %, Fotos 11–43 %. Standard: 50.")
+                TextField("Foto unter sicher erkannten Wörtern", value: $profile.photoMinWords, format: .number)
+                    .disabled(!profile.skipPhotos)
+                    .help("Wörter mit mindestens 3 Zeichen und hoher Erkennungssicherheit. Standard: 10.")
                 Toggle("Vektorisierte Scans rastern und durchsuchbar machen", isOn: $profile.vectorPages)
                     .help("Manche Scanprogramme speichern Seiten als Tausende Vektorelemente ohne Text.")
                 TextField("Vektorisiert ab Elementen", value: $profile.vectorMinItems, format: .number)
