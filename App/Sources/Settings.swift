@@ -33,6 +33,8 @@ struct Profile: Codable, Equatable {
     var bgRate = 200.0
     var fitA4 = true
     var maxDpi = 0  // 0 = aus
+    var sharpen = 150  // %, 0 = aus
+    var sharpenRadius = 1.5
     var jobs = 0  // gleichzeitig verarbeitete Seiten; 0 = automatisch (Anzahl Kerne)
     // Ausgabe
     var output = OutputMode.copy
@@ -69,6 +71,8 @@ struct Profile: Codable, Equatable {
         bgRate = try value(.bgRate, d.bgRate)
         fitA4 = try value(.fitA4, d.fitA4)
         maxDpi = try value(.maxDpi, d.maxDpi)
+        sharpen = try value(.sharpen, d.sharpen)
+        sharpenRadius = try value(.sharpenRadius, d.sharpenRadius)
         jobs = try value(.jobs, d.jobs)
         output = try value(.output, d.output)
         suffix = try value(.suffix, d.suffix)
@@ -99,6 +103,8 @@ struct Profile: Codable, Equatable {
             "MRC_BG_COMPRESSION_RATE": String(bgRate),
             "MRC_FIT_A4": flag(fitA4),
             "MRC_MAX_DPI": String(maxDpi),
+            "MRC_SHARPEN": String(sharpen),
+            "MRC_SHARPEN_RADIUS": String(sharpenRadius),
         ]
         if jobs > 0 {
             env["PAPERLESS_THREADS_PER_WORKER"] = String(jobs)

@@ -253,6 +253,15 @@ struct ProfileForm: View {
                     Text("400 dpi").tag(400)
                 }
                 .help("Höher aufgelöste Scans werden herunterskaliert: schneller und kleiner, feinste Details gehen verloren.")
+                LabeledContent(profile.sharpen == 0 ? "Nachschärfen: aus" : "Nachschärfen: \(profile.sharpen) %") {
+                    Slider(value: Binding(get: { Double(profile.sharpen) }, set: { profile.sharpen = Int($0) }),
+                           in: 0...300, step: 25)
+                }
+                .help("Hebt hellgraue, dünne Schrift an, damit sie scharf bleibt. Standard: 150 %, 0 = aus.")
+                TextField("Radius Nachschärfen (px bei 200 dpi)", value: $profile.sharpenRadius,
+                          format: .number.precision(.fractionLength(0...1)))
+                    .disabled(profile.sharpen == 0)
+                    .help("Standard: 1,5. Wird mit der Auflösung des Scans skaliert.")
                 Stepper(profile.jobs == 0 ? "Gleichzeitige Seiten: automatisch" : "Gleichzeitige Seiten: \(profile.jobs)",
                         value: $profile.jobs, in: 0...16)
                     .help("Automatisch = Anzahl der Prozessorkerne.")
