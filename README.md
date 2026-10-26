@@ -41,6 +41,7 @@ Einstellungen (je Profil, *Standardwerte wiederherstellen* setzt sie zurück):
 | Hintergrundauflösung | 1/2 | Text und Linien bleiben immer in voller Auflösung |
 | Kompressionsrate | 200 | höher = kleiner; Farbflächen und hellgraue Schrift leiden |
 | Falsche Seitengrößen auf A4 korrigieren | an | z. B. Handyscans mit 61 × 86 cm |
+| Höchstauflösung | aus | höher aufgelöste Scans herunterskalieren (z. B. 300 dpi): schneller und kleiner |
 | Gleichzeitige Seiten | automatisch | Anzahl der Prozessorkerne |
 | **Ausgabe** | | |
 | Ergebnis | Kopie | *Als Kopie neben dem Original* (`<Name> (komprimiert).pdf`, Zusatz änderbar) oder *Original ersetzen* (Original in den Papierkorb) |

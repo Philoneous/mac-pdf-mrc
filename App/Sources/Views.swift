@@ -246,6 +246,13 @@ struct ProfileForm: View {
                 }
                 .help("Höher = kleinere Datei; Farbflächen und hellgraue Schrift leiden. Standard: 200.")
                 Toggle("Falsche Seitengrößen (z. B. Handyscans) auf A4 korrigieren", isOn: $profile.fitA4)
+                Picker("Höchstauflösung", selection: $profile.maxDpi) {
+                    Text("Aus (Standard)").tag(0)
+                    Text("200 dpi").tag(200)
+                    Text("300 dpi").tag(300)
+                    Text("400 dpi").tag(400)
+                }
+                .help("Höher aufgelöste Scans werden herunterskaliert: schneller und kleiner, feinste Details gehen verloren.")
                 Stepper(profile.jobs == 0 ? "Gleichzeitige Seiten: automatisch" : "Gleichzeitige Seiten: \(profile.jobs)",
                         value: $profile.jobs, in: 0...16)
                     .help("Automatisch = Anzahl der Prozessorkerne.")
