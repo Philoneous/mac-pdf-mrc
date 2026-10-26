@@ -15,7 +15,7 @@ struct PDFMRCApp: App {
         WindowGroup("PDF MRC") {
             ContentView().environmentObject(store)
         }
-        .windowResizability(.contentSize)
+        .windowResizability(.contentMinSize)
     }
 }
 
@@ -32,7 +32,7 @@ struct ContentView: View {
                 .tag("kontextmenue")
         }
         .padding()
-        .frame(width: 580, height: 780)
+        .frame(minWidth: 560, idealWidth: 580, minHeight: 520, idealHeight: 780)
     }
 }
 
