@@ -21,14 +21,31 @@ Einstellungen (je Profil, *Standardwerte wiederherstellen* setzt sie zurück):
 
 | Einstellung | Standard | Wirkung |
 |---|---|---|
+| **Seitenauswahl** | | |
+| Auch PDFs mit digitalen Seiten bearbeiten | an | digitale Seiten bleiben unverändert; aus = nur reine Scan-PDFs |
+| Fotoseiten unverändert lassen | an | MRC verschlechtert Fotos sichtbar |
+| Foto unter Papieranteil (%) | 50 | gemessen: Dokumentseiten 61–98 %, Fotos 11–43 %; gilt auch für leere Seiten (nur papierartige Seiten können leer sein) |
+| Vektorisierte Scans rastern | an | Seiten ohne Bild und Text aus Tausenden Vektorelementen werden gerastert und durchsuchbar |
+| Vektorisiert ab Elementen / Rasterauflösung | 1000 / 300 dpi | |
+| **Texterkennung** | | |
+| Vorhandene Textebene übernehmen | an | aus = immer neu mit Tesseract erkennen |
 | Sprachen | `deu+eng+pol` | Tesseract-Sprachen; installiert sind alle (`tesseract-lang`) |
-| Seiten automatisch drehen / Schräglage begradigen | an | nur Seiten ohne vorhandene Textebene |
+| Seiten automatisch drehen / Mindestsicherheit | an / 12 | nur Seiten ohne übernommene Textebene |
+| Schräglage begradigen / erst ab / Suchbereich ± | an / 0,2° / 5° | Ergebnis am Rand des Suchbereichs gilt als unklar → keine Korrektur |
+| **Leere Seiten** | | |
 | Leere gescannte Seiten entfernen | an | |
 | Leer unter Tintenanteil (%) | 0,005 | eine Seite mit nur einer Seitenzahl liegt bei ca. 0,05 % |
+| **Qualität und Größe** | | |
 | Hintergrundauflösung | 1/2 | Text und Linien bleiben immer in voller Auflösung |
 | Kompressionsrate | 200 | höher = kleiner; Farbflächen und hellgraue Schrift leiden |
 | Falsche Seitengrößen auf A4 korrigieren | an | z. B. Handyscans mit 61 × 86 cm |
+| Gleichzeitige Seiten | automatisch | Anzahl der Prozessorkerne |
+| **Ausgabe** | | |
 | Ergebnis | Kopie | *Als Kopie neben dem Original* (`<Name> (komprimiert).pdf`, Zusatz änderbar) oder *Original ersetzen* (Original in den Papierkorb) |
+
+Nicht abschaltbar (Sicherheit): digital signierte PDFs bleiben unverändert, und ein Ergebnis entsteht nur, wenn es
+geprüft und kleiner ist. Einstellungsdateien älterer Versionen bleiben gültig; neue Einstellungen erhalten dort den
+Standardwert.
 
 Ist keine Verkleinerung möglich (keine gescannten Seiten, digital signiert, Ergebnis nicht kleiner, Fehler), entsteht
 keine Datei und das Original bleibt, wie es ist. Eine schon vorhandene Kopie wird nicht überschrieben.

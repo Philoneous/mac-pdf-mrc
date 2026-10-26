@@ -126,6 +126,18 @@ def main() -> None:
         print("Hinweis: Papierkorb nicht lesbar (Datenschutz), Prüfung übersprungen")
     print("ok: ersetzen")
 
+    # Neue Einstellungen kommen an: gemischte PDF bleibt bei abgeschalteter Option ohne Ergebnis
+    mixed = write_scan(tmp / "gemischt.pdf", [scan_image(rng)])
+    with pymupdf.open(mixed) as d:
+        d.new_page().insert_text((72, 72), "Digitaler Anhang")
+        d.saveIncr()
+    out = run_app(mixed, quick=profile(mixedPdfs=False))
+    assert not (tmp / "gemischt (komprimiert).pdf").exists(), out
+    assert "nicht gescannte Seiten" in out, out
+    run_app(mixed, quick=profile())  # alte Einstellungsdatei ohne neue Schlüssel: Standard = bearbeiten
+    assert (tmp / "gemischt (komprimiert).pdf").exists()
+    print("ok: neue Einstellungen")
+
 
 if __name__ == "__main__":
     main()

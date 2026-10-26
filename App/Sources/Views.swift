@@ -176,11 +176,48 @@ struct ProfileForm: View {
 
     var body: some View {
         Form {
-            Section("Texterkennung (nur Seiten ohne vorhandene Textebene)") {
+            Section("Seitenauswahl") {
+                Toggle("Auch PDFs mit digitalen Seiten bearbeiten", isOn: $profile.mixedPdfs)
+                    .help("Digitale Seiten bleiben dabei unverändert. Aus: nur PDFs, die ausschließlich aus Scans bestehen.")
+                Toggle("Fotoseiten unverändert lassen", isOn: $profile.skipPhotos)
+                    .help("MRC verschlechtert Fotos sichtbar. Erkannt am geringen Anteil an Papierfläche.")
+                TextField("Foto unter Papieranteil (%)", value: $profile.photoPaperPercent,
+                          format: .number.precision(.fractionLength(0...1)))
+                    .help("Gemessen: Dokumentseiten 61–98 %, Fotos 11–43 %. Standard: 50. "
+                          + "Gilt auch für leere Seiten: nur papierartige Seiten können als leer gelten.")
+                Toggle("Vektorisierte Scans rastern und durchsuchbar machen", isOn: $profile.vectorPages)
+                    .help("Manche Scanprogramme speichern Seiten als Tausende Vektorelemente ohne Text.")
+                TextField("Vektorisiert ab Elementen", value: $profile.vectorMinItems, format: .number)
+                    .disabled(!profile.vectorPages)
+                    .help("Seite ohne Bild und Text mit mindestens so vielen Linien/Kurven. Standard: 1000.")
+                Picker("Rasterauflösung", selection: $profile.vectorDpi) {
+                    Text("200 dpi").tag(200)
+                    Text("300 dpi (Standard)").tag(300)
+                    Text("400 dpi").tag(400)
+                    Text("600 dpi").tag(600)
+                }
+                .disabled(!profile.vectorPages)
+            }
+            Section("Texterkennung") {
+                Toggle("Vorhandene Textebene übernehmen", isOn: $profile.keepTextLayer)
+                    .help("Aus: Text immer neu mit Tesseract erkennen (dann wird auch gedreht und begradigt).")
                 TextField("Sprachen", text: $profile.languages, prompt: Text("deu+eng+pol"))
                     .help("Tesseract-Sprachkürzel, mit + verbunden")
                 Toggle("Seiten automatisch drehen", isOn: $profile.rotate)
+                TextField("Mindestsicherheit Drehung", value: $profile.rotateThreshold,
+                          format: .number.precision(.fractionLength(0...1)))
+                    .disabled(!profile.rotate)
+                    .help("Tesseract-Konfidenz, ab der gedreht wird. Standard: 12.")
                 Toggle("Schräglage begradigen", isOn: $profile.deskew)
+                TextField("Erst ab Schräglage (Grad)", value: $profile.deskewMinAngle,
+                          format: .number.precision(.fractionLength(0...2)))
+                    .disabled(!profile.deskew)
+                    .help("Kleinere Schräglagen bleiben. Standard: 0,2.")
+                TextField("Suchbereich ± (Grad)", value: $profile.deskewMaxAngle,
+                          format: .number.precision(.fractionLength(0...1)))
+                    .disabled(!profile.deskew)
+                    .help("Ein Ergebnis am Rand gilt als unklar (z. B. Seite ohne Textzeilen) und wird nicht korrigiert. "
+                          + "Standard: 5.")
             }
             Section("Leere Seiten") {
                 Toggle("Leere gescannte Seiten entfernen", isOn: $profile.removeBlank)
@@ -201,6 +238,9 @@ struct ProfileForm: View {
                 }
                 .help("Höher = kleinere Datei; Farbflächen und hellgraue Schrift leiden. Standard: 200.")
                 Toggle("Falsche Seitengrößen (z. B. Handyscans) auf A4 korrigieren", isOn: $profile.fitA4)
+                Stepper(profile.jobs == 0 ? "Gleichzeitige Seiten: automatisch" : "Gleichzeitige Seiten: \(profile.jobs)",
+                        value: $profile.jobs, in: 0...16)
+                    .help("Automatisch = Anzahl der Prozessorkerne.")
             }
             Section("Ausgabe") {
                 Picker("Ergebnis", selection: $profile.output) {
