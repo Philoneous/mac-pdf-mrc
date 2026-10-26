@@ -1,20 +1,39 @@
 # mac-pdf-mrc
 
-Finder-Schnellaktion für macOS, die gescannte PDFs per *Mixed Raster Content* (MRC) verkleinert:
-Rechtsklick auf eine oder mehrere PDFs → *Schnellaktionen → PDF komprimieren (MRC)*.
+Kleine Mac-App **PDF MRC**, die gescannte PDFs per *Mixed Raster Content* (MRC) stark verkleinert – manuell in der
+App oder per Rechtsklick im Finder (*Schnellaktionen → PDF komprimieren (MRC)*).
 
 Die Verarbeitung übernimmt [paperless-mrc](https://github.com/Philoneous/paperless-mrc) – dasselbe Skript, das in
 Paperless-ngx neue Scans komprimiert. Was dabei genau passiert (nur gescannte Seiten, leere Seiten entfernen,
 Textebene übernehmen oder per Tesseract erkennen, falsche Seitengrößen korrigieren, Ergebnis prüfen), steht dort im
-README. Dieses Repo enthält nur den Mac-Installer und die Schnellaktion.
+README. Dieses Repo enthält die App, die Schnellaktion und den Installer.
 
-## Verhalten
+## Die App
 
-- Je ausgewählter PDF entsteht `<Name> (komprimiert).pdf` daneben. **Das Original bleibt unverändert.**
-- Ist keine Verkleinerung möglich (keine gescannten Seiten, digital signiert, Ergebnis nicht kleiner, Fehler),
-  entsteht keine Datei.
-- Gibt es `<Name> (komprimiert).pdf` schon, wird die PDF übersprungen.
-- Das Ergebnis erscheint als Mitteilung, z. B. „1447 KB -> 45 KB, 1 Seite(n), 1 leere entfernt, Textebene per Tesseract“.
+**Reiter „Manuell umwandeln“:** PDF hineinziehen oder auswählen, Einstellungen anpassen, *Umwandeln*. Das Ergebnis und
+alle Meldungen von paperless-mrc erscheinen darunter, *Im Finder zeigen* öffnet die neue Datei.
+
+**Reiter „Kontextmenü“:** Schnellaktion im Finder ein- und ausschalten und ihre Einstellungen festlegen (unabhängig von
+der manuellen Umwandlung; *Einstellungen der manuellen Umwandlung übernehmen* kopiert sie herüber). Das Ergebnis jeder
+Datei erscheint als Mitteilung.
+
+Einstellungen (je Profil, *Standardwerte wiederherstellen* setzt sie zurück):
+
+| Einstellung | Standard | Wirkung |
+|---|---|---|
+| Sprachen | `deu+eng+pol` | Tesseract-Sprachen; installiert sind alle (`tesseract-lang`) |
+| Seiten automatisch drehen / Schräglage begradigen | an | nur Seiten ohne vorhandene Textebene |
+| Leere gescannte Seiten entfernen | an | |
+| Leer unter Tintenanteil (%) | 0,005 | eine Seite mit nur einer Seitenzahl liegt bei ca. 0,05 % |
+| Hintergrundauflösung | 1/2 | Text und Linien bleiben immer in voller Auflösung |
+| Kompressionsrate | 200 | höher = kleiner; Farbflächen und hellgraue Schrift leiden |
+| Falsche Seitengrößen auf A4 korrigieren | an | z. B. Handyscans mit 61 × 86 cm |
+| Ergebnis | Kopie | *Als Kopie neben dem Original* (`<Name> (komprimiert).pdf`, Zusatz änderbar) oder *Original ersetzen* (Original in den Papierkorb) |
+
+Ist keine Verkleinerung möglich (keine gescannten Seiten, digital signiert, Ergebnis nicht kleiner, Fehler), entsteht
+keine Datei und das Original bleibt, wie es ist. Eine schon vorhandene Kopie wird nicht überschrieben.
+
+Gespeichert werden die Einstellungen in `~/Library/Application Support/mac-pdf-mrc/settings.json`.
 
 ## Installation
 
@@ -28,22 +47,31 @@ Der Installer
 - installiert per Homebrew Tesseract mit allen Sprachpaketen (`tesseract-lang`, großer Download), OpenJPEG, Poppler,
   jbig2enc und uv,
 - installiert paperless-mrc (aktueller Stand von `main`) mit `uv tool install` in eine eigene Python-Umgebung,
-- legt das Aufrufskript `~/.local/bin/pdf-mrc` an,
-- schreibt die Schnellaktion nach `~/Library/Services/PDF komprimieren (MRC).workflow`.
+- baut die App aus dem Quellcode (`swiftc` aus den Command Line Tools, die Homebrew ohnehin voraussetzt) nach
+  `~/Applications/PDF MRC.app` – lokal gebaut, daher keine Gatekeeper-Warnung,
+- richtet bei der Erstinstallation die Schnellaktion in `~/Library/Services` ein; bei Updates bleibt sie an oder aus,
+  wie in der App eingestellt.
 
-**Update** (auch neue Versionen von paperless-mrc): denselben Befehl erneut ausführen.
-**Entfernen:** `uv tool uninstall paperless-mrc`, dann `~/.local/bin/pdf-mrc` und
-`~/Library/Services/PDF komprimieren (MRC).workflow` löschen.
+**Update** (App und paperless-mrc): denselben Befehl erneut ausführen.
+**Entfernen:** `uv tool uninstall paperless-mrc`, dann `~/Applications/PDF MRC.app`,
+`~/Library/Services/PDF komprimieren (MRC).workflow` und `~/Library/Application Support/mac-pdf-mrc` löschen.
 
 ## Hinweise
 
-- Tesseract-Sprachen: `deu+eng+pol`, änderbar in `~/.local/bin/pdf-mrc` (`PAPERLESS_OCR_LANGUAGE`).
-- Erscheint der Eintrag nicht im Kontextmenü: *Systemeinstellungen → Tastatur → Tastaturkurzbefehle → Dienste* prüfen,
-  ob er aktiviert ist.
-- Für Apple-Silicon-Macs gibt es fertige Pakete aller Python-Abhängigkeiten. Auf Intel-Macs muss archive-pdf-tools aus
-  dem Quellcode gebaut werden (Xcode Command Line Tools); das ist ungetestet.
-- Auf einem echten Mac noch nicht getestet: Erscheinen im Kontextmenü, Mitteilungen, Zugriffsabfragen von macOS beim
-  ersten Lauf in geschützten Ordnern (Schreibtisch, Dokumente, Downloads).
+- Voraussetzung macOS 13 oder neuer, Apple Silicon. Auf Intel-Macs müsste archive-pdf-tools aus dem Quellcode gebaut
+  werden; das ist ungetestet.
+- Erscheint die Schnellaktion nicht im Kontextmenü: *Systemeinstellungen → Tastatur → Tastaturkurzbefehle → Dienste*
+  prüfen, ob sie aktiviert ist.
+- Beim ersten Zugriff auf Schreibtisch, Dokumente oder Downloads fragt macOS nach der Erlaubnis.
+
+## Entwicklung
+
+Bei jedem Push baut und testet GitHub Actions auf einem macOS-Runner (`.github/workflows/macos.yml`): Installer aus
+dem Checkout, Ende-zu-Ende-Test des Kontextmenü-Modus (`ci/test_app.py`) und je ein Bildschirmfoto der beiden Reiter
+(Artefakt `screenshots`). Lokal: `SRC_DIR=$PWD bash install.sh`.
+
+Die App ruft paperless-mrc wie Paperless auf: Umgebungsvariable `DOCUMENT_WORKING_PATH` auf eine Kopie, Einstellungen
+über `PAPERLESS_OCR_*` und `MRC_*`, Ergebnis in der letzten Ausgabezeile mit Präfix `paperless-mrc:`.
 
 ## Lizenz
 
