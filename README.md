@@ -24,7 +24,7 @@ Einstellungen (je Profil, *Standardwerte wiederherstellen* setzt sie zurück):
 | **Seitenauswahl** | | |
 | Auch PDFs mit digitalen Seiten bearbeiten | an | digitale Seiten bleiben unverändert; aus = nur reine Scan-PDFs |
 | Fotoseiten unverändert lassen | an | MRC verschlechtert Fotos sichtbar |
-| Foto unter Papieranteil (%) | 50 | gemessen: Dokumentseiten 61–98 %, Fotos 11–43 %; gilt auch für leere Seiten (nur papierartige Seiten können leer sein) |
+| Foto unter Farbflächenanteil (%) | 60 | Anteil der Fläche, der sich mit 8 einheitlichen Farben darstellen lässt; grau oder farbig hinterlegter Text gilt als Dokument (Testseiten: Dokumente 84–98 %, Fotos 11–25 %) |
 | Vektorisierte Scans rastern | an | Seiten ohne Bild und Text aus Tausenden Vektorelementen werden gerastert und durchsuchbar |
 | Vektorisiert ab Elementen / Rasterauflösung | 1000 / 300 dpi | |
 | **Texterkennung** | | |
@@ -35,6 +35,7 @@ Einstellungen (je Profil, *Standardwerte wiederherstellen* setzt sie zurück):
 | **Leere Seiten** | | |
 | Leere gescannte Seiten entfernen | an | |
 | Leer unter Tintenanteil (%) | 0,005 | eine Seite mit nur einer Seitenzahl liegt bei ca. 0,05 % |
+| Leer nur ab Papierfläche (%) | 90 | schützt kontrastarme Fotos davor, als leer entfernt zu werden |
 | **Qualität und Größe** | | |
 | Hintergrundauflösung | 1/2 | Text und Linien bleiben immer in voller Auflösung |
 | Kompressionsrate | 200 | höher = kleiner; Farbflächen und hellgraue Schrift leiden |

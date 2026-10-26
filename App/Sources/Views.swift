@@ -180,11 +180,12 @@ struct ProfileForm: View {
                 Toggle("Auch PDFs mit digitalen Seiten bearbeiten", isOn: $profile.mixedPdfs)
                     .help("Digitale Seiten bleiben dabei unverändert. Aus: nur PDFs, die ausschließlich aus Scans bestehen.")
                 Toggle("Fotoseiten unverändert lassen", isOn: $profile.skipPhotos)
-                    .help("MRC verschlechtert Fotos sichtbar. Erkannt am geringen Anteil an Papierfläche.")
-                TextField("Foto unter Papieranteil (%)", value: $profile.photoPaperPercent,
+                    .help("MRC verschlechtert Fotos sichtbar. Erkannt daran, dass sie sich nicht mit wenigen "
+                          + "einheitlichen Farben darstellen lassen; grau oder farbig hinterlegter Text gilt als Dokument.")
+                TextField("Foto unter Farbflächenanteil (%)", value: $profile.photoFlatPercent,
                           format: .number.precision(.fractionLength(0...1)))
-                    .help("Gemessen: Dokumentseiten 61–98 %, Fotos 11–43 %. Standard: 50. "
-                          + "Gilt auch für leere Seiten: nur papierartige Seiten können als leer gelten.")
+                    .disabled(!profile.skipPhotos)
+                    .help("Testseiten: Dokumente 84–98 %, Fotos 11–25 %. Standard: 60.")
                 Toggle("Vektorisierte Scans rastern und durchsuchbar machen", isOn: $profile.vectorPages)
                     .help("Manche Scanprogramme speichern Seiten als Tausende Vektorelemente ohne Text.")
                 TextField("Vektorisiert ab Elementen", value: $profile.vectorMinItems, format: .number)
@@ -225,6 +226,10 @@ struct ProfileForm: View {
                           format: .number.precision(.fractionLength(0...4)))
                     .disabled(!profile.removeBlank)
                     .help("Eine Seite mit nur einer Seitenzahl liegt bei ca. 0,05 %. Standard: 0,005 %.")
+                TextField("Leer nur ab Papierfläche (%)", value: $profile.blankPaperPercent,
+                          format: .number.precision(.fractionLength(0...1)))
+                    .disabled(!profile.removeBlank)
+                    .help("Schützt kontrastarme Fotos (z. B. einer Wand) davor, als leer entfernt zu werden. Standard: 90.")
             }
             Section("Qualität und Größe") {
                 Picker("Hintergrundauflösung", selection: $profile.bgDownsample) {

@@ -19,13 +19,14 @@ struct Profile: Codable, Equatable {
     // Seitenauswahl
     var mixedPdfs = true
     var skipPhotos = true
-    var photoPaperPercent = 50.0
+    var photoFlatPercent = 60.0
     var vectorPages = true
     var vectorMinItems = 1000
     var vectorDpi = 300
     // Leere Seiten
     var removeBlank = true
     var blankInkPercent = 0.005
+    var blankPaperPercent = 90.0
     // Qualität und Größe
     var bgDownsample = 2
     var bgRate = 200.0
@@ -54,12 +55,13 @@ struct Profile: Codable, Equatable {
         deskewMaxAngle = try value(.deskewMaxAngle, d.deskewMaxAngle)
         mixedPdfs = try value(.mixedPdfs, d.mixedPdfs)
         skipPhotos = try value(.skipPhotos, d.skipPhotos)
-        photoPaperPercent = try value(.photoPaperPercent, d.photoPaperPercent)
+        photoFlatPercent = try value(.photoFlatPercent, d.photoFlatPercent)
         vectorPages = try value(.vectorPages, d.vectorPages)
         vectorMinItems = try value(.vectorMinItems, d.vectorMinItems)
         vectorDpi = try value(.vectorDpi, d.vectorDpi)
         removeBlank = try value(.removeBlank, d.removeBlank)
         blankInkPercent = try value(.blankInkPercent, d.blankInkPercent)
+        blankPaperPercent = try value(.blankPaperPercent, d.blankPaperPercent)
         bgDownsample = try value(.bgDownsample, d.bgDownsample)
         bgRate = try value(.bgRate, d.bgRate)
         fitA4 = try value(.fitA4, d.fitA4)
@@ -81,12 +83,13 @@ struct Profile: Codable, Equatable {
             "MRC_DESKEW_MAX_ANGLE": String(deskewMaxAngle),
             "MRC_MIXED_PDFS": flag(mixedPdfs),
             "MRC_SKIP_PHOTOS": flag(skipPhotos),
-            "MRC_PHOTO_PAPER_PERCENT": String(photoPaperPercent),
+            "MRC_PHOTO_FLAT_PERCENT": String(photoFlatPercent),
             "MRC_VECTOR_PAGES": flag(vectorPages),
             "MRC_VECTOR_MIN_ITEMS": String(vectorMinItems),
             "MRC_VECTOR_DPI": String(vectorDpi),
             "MRC_REMOVE_BLANK_PAGES": flag(removeBlank),
             "MRC_BLANK_INK_PERCENT": String(blankInkPercent),
+            "MRC_BLANK_PAPER_PERCENT": String(blankPaperPercent),
             "MRC_BG_DOWNSAMPLE": String(bgDownsample),
             "MRC_BG_COMPRESSION_RATE": String(bgRate),
             "MRC_FIT_A4": flag(fitA4),
