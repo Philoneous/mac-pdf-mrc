@@ -262,6 +262,11 @@ struct ProfileForm: View {
                           format: .number.precision(.fractionLength(0...1)))
                     .disabled(profile.sharpen == 0)
                     .help("Standard: 1,5. Wird mit der Auflösung des Scans skaliert.")
+                LabeledContent("Textmaske: Faktor \(profile.maskFactor, specifier: "%.2f")") {
+                    Slider(value: $profile.maskFactor, in: 0.1...1.0, step: 0.05)
+                }
+                .help("Kleiner = auch hellgraue Schrift bleibt scharf (mehr Pixel in der Textmaske), "
+                      + "aber eher Punkte/Rauschen. 1 = recode_pdf-Standard. Standard: 0,5.")
                 Stepper(profile.jobs == 0 ? "Gleichzeitige Seiten: automatisch" : "Gleichzeitige Seiten: \(profile.jobs)",
                         value: $profile.jobs, in: 0...16)
                     .help("Automatisch = Anzahl der Prozessorkerne.")

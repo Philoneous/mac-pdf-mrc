@@ -35,6 +35,7 @@ struct Profile: Codable, Equatable {
     var maxDpi = 0  // 0 = aus
     var sharpen = 150  // %, 0 = aus
     var sharpenRadius = 1.5
+    var maskFactor = 0.5
     var jobs = 0  // gleichzeitig verarbeitete Seiten; 0 = automatisch (Anzahl Kerne)
     // Ausgabe
     var output = OutputMode.copy
@@ -73,6 +74,7 @@ struct Profile: Codable, Equatable {
         maxDpi = try value(.maxDpi, d.maxDpi)
         sharpen = try value(.sharpen, d.sharpen)
         sharpenRadius = try value(.sharpenRadius, d.sharpenRadius)
+        maskFactor = try value(.maskFactor, d.maskFactor)
         jobs = try value(.jobs, d.jobs)
         output = try value(.output, d.output)
         suffix = try value(.suffix, d.suffix)
@@ -105,6 +107,7 @@ struct Profile: Codable, Equatable {
             "MRC_MAX_DPI": String(maxDpi),
             "MRC_SHARPEN": String(sharpen),
             "MRC_SHARPEN_RADIUS": String(sharpenRadius),
+            "MRC_MASK_FACTOR": String(maskFactor),
         ]
         if jobs > 0 {
             env["PAPERLESS_THREADS_PER_WORKER"] = String(jobs)
