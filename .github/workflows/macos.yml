@@ -18,13 +18,13 @@ jobs:
         run: xcrun swiftc -swift-version 5 -parse-as-library -target arm64-apple-macos13.0 -typecheck App/Sources/*.swift
 
       - name: Installer
-        run: SRC_DIR="$GITHUB_WORKSPACE" bash ci/report.sh Installer bash install.sh
+        run: SRC_DIR="$GITHUB_WORKSPACE" /bin/bash ci/report.sh Installer /bin/bash install.sh
 
       - name: Kontextmenü-Modus
-        run: bash ci/report.sh Kontextmenü "$(uv tool dir)/paperless-mrc/bin/python" ci/test_app.py "$RUNNER_TEMP/pdfs"
+        run: /bin/bash ci/report.sh Kontextmenü "$(uv tool dir)/paperless-mrc/bin/python" ci/test_app.py "$RUNNER_TEMP/pdfs"
 
       - name: Oberfläche
-        run: bash ci/report.sh Oberfläche bash ci/screenshots.sh
+        run: /bin/bash ci/report.sh Oberfläche /bin/bash ci/screenshots.sh
 
       - uses: actions/upload-artifact@v4
         if: always()

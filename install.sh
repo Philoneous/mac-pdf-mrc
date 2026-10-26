@@ -369,9 +369,9 @@ if $first_install || [[ -d "$WORKFLOW" ]]; then
   rm -rf "$WORKFLOW"
   mkdir -p "$(dirname "$WORKFLOW")"
   cp -R "$APP/Contents/Resources/$NAME.workflow" "$WORKFLOW"
-  ok "Schnellaktion „$NAME“ eingerichtet"
+  ok "Schnellaktion „${NAME}“ eingerichtet"
 else
   ok "Schnellaktion bleibt ausgeschaltet (in der App einschaltbar)"
 fi
 /System/Library/CoreServices/pbs -flush >/dev/null 2>&1 || true
-ok "Fertig. App „PDF MRC“ in ~/Applications; Rechtsklick auf PDFs → Schnellaktionen → „$NAME“"
+ok "Fertig. App „PDF MRC“ in ~/Applications; Rechtsklick auf PDFs → Schnellaktionen → „${NAME}“"
