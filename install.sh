@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # =============================================================================
-#  mac-pdf-mrc: Finder-Schnellaktion „PDF komprimieren (MRC)“ installieren oder
-#  aktualisieren (macOS, Homebrew).
+#  mac-pdf-mrc installieren oder aktualisieren (macOS, Homebrew):
+#  App „PDF MRC“ in ~/Applications und Finder-Schnellaktion „PDF komprimieren (MRC)“.
 #
 #  Aufruf als normaler Benutzer (nicht mit sudo):
 #    bash install.sh
 #  Erneuter Aufruf = Update (auch von paperless-mrc).
 #
-#  Die Schnellaktion legt je ausgewählter PDF "<Name> (komprimiert).pdf" daneben an;
-#  das Original bleibt unverändert. Die Verarbeitung selbst übernimmt paperless-mrc
+#  Die Verarbeitung selbst übernimmt paperless-mrc
 #  (https://github.com/Philoneous/paperless-mrc), das hier als Python-Paket installiert wird.
 # =============================================================================
 set -Eeuo pipefail
 
+REPO_URL="${REPO_URL:-https://github.com/Philoneous/mac-pdf-mrc.git}"
 PACKAGE="${PACKAGE:-git+https://github.com/Philoneous/paperless-mrc.git}"  # Verarbeitung
+SRC_DIR="${SRC_DIR:-}"  # vorhandener Checkout statt Download (Entwicklung, CI)
+APP="$HOME/Applications/PDF MRC.app"
 NAME="PDF komprimieren (MRC)"
 WORKFLOW="$HOME/Library/Services/$NAME.workflow"
 
@@ -25,6 +27,8 @@ die() { printf '[FEHLER] %s\n' "$*" >&2; exit 1; }
 [[ "$(uname -s)" == Darwin ]] || die "Nur für macOS."
 [[ $EUID -ne 0 ]] || die "Bitte nicht als root ausführen."
 command -v brew >/dev/null || die "Homebrew fehlt – siehe https://brew.sh"
+xcrun --find swiftc >/dev/null 2>&1 || die "Swift-Compiler fehlt – bitte 'xcode-select --install' ausführen."
+[[ "$HOME" != *[\&\<\>\"\$\`\\]* ]] || die "Ungewöhnliche Zeichen im Pfad $HOME."
 
 # ---- Werkzeuge (Tesseract mit allen Sprachen, OpenJPEG, Poppler, jbig2enc, uv) -----
 msg "Homebrew-Pakete installieren"
@@ -34,45 +38,54 @@ brew install --quiet tesseract tesseract-lang openjpeg poppler jbig2enc uv
 msg "paperless-mrc installieren"
 uv tool install --quiet --force --python 3.13 --reinstall-package paperless-mrc "$PACKAGE"
 BIN="$(uv tool dir --bin)"
+TOOL="$BIN/paperless-mrc"
 "$(uv tool dir)/paperless-mrc/bin/recode_pdf" --version >/dev/null 2>&1 || die "recode_pdf startet nicht."
-[[ "$BIN" != *[\&\<\>\"\$\`\\]* ]] || die "Ungewöhnliche Zeichen im Pfad $BIN – bitte UV_TOOL_BIN_DIR setzen."
-ok "paperless-mrc installiert ($BIN/paperless-mrc)"
+[[ "$TOOL" != *[\&\<\>\"\$\`\\]* ]] || die "Ungewöhnliche Zeichen im Pfad $TOOL – bitte UV_TOOL_BIN_DIR setzen."
+ok "paperless-mrc installiert ($TOOL)"
 
-# ---- Aufruf je ausgewählter PDF -------------------------------------------------------------
-cat > "$BIN/pdf-mrc" <<'EOF'
-#!/bin/zsh
-# Finder-Schnellaktion „PDF komprimieren (MRC)“ – Teil von mac-pdf-mrc (AGPL-3.0-or-later).
-# Legt je PDF "<Name> (komprimiert).pdf" daneben an; das Original bleibt unverändert.
-# Ist das Ergebnis nicht verwendbar (keine reine Scan-PDF, nicht kleiner, Fehler), entsteht keine Datei.
-export PATH="${0:A:h}:/opt/homebrew/bin:/usr/local/bin:$PATH"
-export PAPERLESS_OCR_LANGUAGE="${PAPERLESS_OCR_LANGUAGE:-deu+eng+pol}"
+# ---- App bauen ------------------------------------------------------------------------------
+if [[ -z "$SRC_DIR" ]]; then
+  SRC_DIR="$(mktemp -d)/mac-pdf-mrc"
+  git clone -q --depth 1 "$REPO_URL" "$SRC_DIR"
+fi
+VERSION="$(git -C "$SRC_DIR" rev-parse --short HEAD 2>/dev/null || echo dev)"
+msg "App bauen ($VERSION)"
+BUILD="$(mktemp -d)/PDF MRC.app"
+mkdir -p "$BUILD/Contents/MacOS" "$BUILD/Contents/Resources"
+xcrun swiftc -swift-version 5 -parse-as-library -O -target "$(uname -m)-apple-macos13.0" \
+  -o "$BUILD/Contents/MacOS/pdf-mrc" "$SRC_DIR"/App/Sources/*.swift
 
-notify() {
-  osascript -e 'on run argv' -e 'display notification (item 2 of argv) with title (item 1 of argv)' \
-            -e 'end run' "$1" "$2"
-}
-
-for src in "$@"; do
-  out="${src:r} (komprimiert).pdf"
-  if [[ -e "$out" ]]; then
-    notify "${src:t}" "${out:t} existiert bereits – übersprungen"
-    continue
-  fi
-  cp "$src" "$out"
-  result=$(DOCUMENT_WORKING_PATH="$out" paperless-mrc 2>&1 | grep '^paperless-mrc:' | tail -n 1)
-  cmp -s "$src" "$out" && rm "$out"
-  notify "${src:t}" "${result#paperless-mrc: }"
-done
+cat > "$BUILD/Contents/Info.plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleExecutable</key>
+	<string>pdf-mrc</string>
+	<key>CFBundleIdentifier</key>
+	<string>io.github.philoneous.mac-pdf-mrc</string>
+	<key>CFBundleName</key>
+	<string>PDF MRC</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$VERSION</string>
+	<key>CFBundleVersion</key>
+	<string>$VERSION</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>MRCPaperlessPath</key>
+	<string>$TOOL</string>
+</dict>
+</plist>
 EOF
-chmod +x "$BIN/pdf-mrc"
-ok "Aufrufskript $BIN/pdf-mrc angelegt"
 
-# ---- Finder-Schnellaktion (Automator-Workflow) --------------------------------------------
-msg "Schnellaktion „$NAME“ anlegen"
-rm -rf "$WORKFLOW"
-mkdir -p "$WORKFLOW/Contents"
-
-cat > "$WORKFLOW/Contents/Info.plist" <<EOF
+# Vorlage der Finder-Schnellaktion (die App schaltet sie ein/aus, indem sie sie nach ~/Library/Services kopiert)
+TEMPLATE="$BUILD/Contents/Resources/$NAME.workflow"
+mkdir -p "$TEMPLATE/Contents"
+cat > "$TEMPLATE/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -106,7 +119,7 @@ cat > "$WORKFLOW/Contents/Info.plist" <<EOF
 </plist>
 EOF
 
-cat > "$WORKFLOW/Contents/document.wflow" <<EOF
+cat > "$TEMPLATE/Contents/document.wflow" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -168,7 +181,7 @@ cat > "$WORKFLOW/Contents/document.wflow" <<EOF
 				<key>ActionParameters</key>
 				<dict>
 					<key>COMMAND_STRING</key>
-					<string>"$BIN/pdf-mrc" "\$@"</string>
+					<string>"$APP/Contents/MacOS/pdf-mrc" --kontextmenue "\$@"</string>
 					<key>CheckedForUserDefaultShell</key>
 					<true/>
 					<key>inputMethod</key>
@@ -335,6 +348,30 @@ cat > "$WORKFLOW/Contents/document.wflow" <<EOF
 </plist>
 EOF
 
-plutil -lint -s "$WORKFLOW/Contents/Info.plist" "$WORKFLOW/Contents/document.wflow" || die "Workflow-Dateien ungültig."
+plutil -lint -s "$BUILD/Contents/Info.plist" "$TEMPLATE/Contents/Info.plist" "$TEMPLATE/Contents/document.wflow" \
+  || die "Plist-Dateien ungültig."
+codesign --force --sign - "$BUILD" >/dev/null 2>&1 || die "Signieren der App fehlgeschlagen."
+first_install=true
+[[ -d "$APP" ]] && first_install=false
+mkdir -p "$HOME/Applications"
+rm -rf "$APP"
+mv "$BUILD" "$APP"
+ok "App installiert: $APP"
+
+# ---- Aufrufskript der Vorversion entfernen ------------------------------------------------------
+if [[ -f "$BIN/pdf-mrc" ]] && grep -q "Finder-Schnellaktion" "$BIN/pdf-mrc"; then
+  rm "$BIN/pdf-mrc"
+  ok "Aufrufskript der Vorversion entfernt"
+fi
+
+# ---- Schnellaktion: bei Erstinstallation einschalten, sonst Zustand beibehalten -------------------
+if $first_install || [[ -d "$WORKFLOW" ]]; then
+  rm -rf "$WORKFLOW"
+  mkdir -p "$(dirname "$WORKFLOW")"
+  cp -R "$APP/Contents/Resources/$NAME.workflow" "$WORKFLOW"
+  ok "Schnellaktion „$NAME“ eingerichtet"
+else
+  ok "Schnellaktion bleibt ausgeschaltet (in der App einschaltbar)"
+fi
 /System/Library/CoreServices/pbs -flush >/dev/null 2>&1 || true
-ok "Fertig. Rechtsklick auf eine PDF im Finder → Schnellaktionen → „$NAME“"
+ok "Fertig. App „PDF MRC“ in ~/Applications; Rechtsklick auf PDFs → Schnellaktionen → „$NAME“"

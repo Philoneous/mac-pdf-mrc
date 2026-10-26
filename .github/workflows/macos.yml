@@ -1,0 +1,34 @@
+name: macOS
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swift prüfen (schnell)
+        run: xcrun swiftc -swift-version 5 -parse-as-library -target arm64-apple-macos13.0 -typecheck App/Sources/*.swift
+
+      - name: Installer
+        run: SRC_DIR="$GITHUB_WORKSPACE" bash install.sh
+
+      - name: Kontextmenü-Modus
+        run: '"$(uv tool dir)/paperless-mrc/bin/python" ci/test_app.py "$RUNNER_TEMP/pdfs"'
+
+      - name: Oberfläche
+        run: bash ci/screenshots.sh
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: shots/
+          if-no-files-found: ignore
