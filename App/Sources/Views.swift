@@ -15,6 +15,7 @@ struct PDFMRCApp: App {
         WindowGroup("PDF MRC") {
             ContentView().environmentObject(store)
         }
+        .defaultSize(width: 580, height: 780)
         .windowResizability(.contentMinSize)
     }
 }

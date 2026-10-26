@@ -68,7 +68,8 @@ Der Installer
 
 Bei jedem Push baut und testet GitHub Actions auf einem macOS-Runner (`.github/workflows/macos.yml`): Installer aus
 dem Checkout, Ende-zu-Ende-Test des Kontextmenü-Modus (`ci/test_app.py`) und je ein Bildschirmfoto der beiden Reiter
-(Artefakt `screenshots`). Lokal: `SRC_DIR=$PWD bash install.sh`.
+(Artefakt `screenshots`; bei manuellem Start zusätzlich im Branch `ci-screenshots`). Schlägt ein Schritt fehl,
+stehen die letzten Ausgabezeilen als Annotation am Lauf. Lokal: `SRC_DIR=$PWD bash install.sh`.
 
 Die App ruft paperless-mrc wie Paperless auf: Umgebungsvariable `DOCUMENT_WORKING_PATH` auf eine Kopie, Einstellungen
 über `PAPERLESS_OCR_*` und `MRC_*`, Ergebnis in der letzten Ausgabezeile mit Präfix `paperless-mrc:`.
