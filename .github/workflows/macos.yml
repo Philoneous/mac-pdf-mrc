@@ -7,6 +7,8 @@ on:
 jobs:
   test:
     runs-on: macos-15
+    permissions:
+      contents: write  # nur für den Branch ci-screenshots
     timeout-minutes: 45
     env:
       HOMEBREW_NO_AUTO_UPDATE: "1"
@@ -32,3 +34,15 @@ jobs:
           name: screenshots
           path: shots/
           if-no-files-found: ignore
+
+      # Nur bei manuellem Start: Bildschirmfotos zusätzlich in den Branch ci-screenshots (per Git abrufbar)
+      - name: Bildschirmfotos in Branch ci-screenshots
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          cd shots
+          git init -q -b ci-screenshots
+          git add ./*.png
+          git -c user.name=ci -c user.email=ci@localhost commit -q -m "Bildschirmfotos $GITHUB_SHA"
+          git push -q -f "https://x-access-token:$TOKEN@github.com/$GITHUB_REPOSITORY" ci-screenshots

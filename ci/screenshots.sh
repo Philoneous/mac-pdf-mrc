@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# CI: App starten und je Reiter ein Bildschirmfoto aufnehmen (shots/*.png). Zusätzlich verkleinert als
-# Base64 in Hinweis-Annotationen, damit es auch ohne Zugriff auf Artefakte abrufbar ist.
+# CI: App starten und je Reiter ein Bildschirmfoto aufnehmen (shots/*.png).
 set -euo pipefail
 APP="$HOME/Applications/PDF MRC.app"
 mkdir -p shots
@@ -16,10 +15,6 @@ shot() {
     exit 1
   fi
   screencapture -x "shots/$1.png"
-  sips -Z 1100 -s format jpeg -s formatOptions 60 "shots/$1.png" --out "shots/$1.jpg" >/dev/null
-  base64 -i "shots/$1.jpg" | tr -d '\n' | fold -w 30000 | nl -n ln -w 1 -s ' ' | while read -r n chunk; do
-    echo "::notice title=shot-$1-$n::$chunk"
-  done
   pkill -f "PDF MRC.app/Contents/MacOS/pdf-mrc" || true
   sleep 3
 }
