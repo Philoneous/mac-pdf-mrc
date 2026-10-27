@@ -431,8 +431,12 @@ codesign --force --sign - "$BUILD" >/dev/null 2>&1 || die "Signieren der App feh
 codesign --verify --deep --strict "$BUILD" || die "Signatur ungültig."
 if [[ "$MODE" == --standalone ]]; then
   # Keine Verweise auf Homebrew oder die Bauumgebung
-  bad="$(find "$C" -type f -print0 | xargs -0 file | grep Mach-O | cut -d: -f1 | while IFS= read -r f; do
-           otool -L "$f" | tail -n +2 | grep -E '/opt/homebrew|/usr/local|/Users/' | sed "s|^|$f: |"; done)"
+  bad=""
+  while IFS= read -r -d '' f; do
+    file -b "$f" | grep -q Mach-O || continue
+    refs="$(otool -L "$f" | tail -n +2 | grep -E '/opt/homebrew|/usr/local|/Users/' || true)"
+    [[ -z "$refs" ]] || bad+="$f: $refs"$'\n'
+  done < <(find "$C" -type f -print0)
   [[ -z "$bad" ]] || die "Externe Bibliotheken: $bad"
 fi
 
