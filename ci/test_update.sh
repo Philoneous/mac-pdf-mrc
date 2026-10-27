@@ -59,6 +59,7 @@ trap 'kill $server 2>/dev/null || true' EXIT
 defaults write "$ID" SUEnableAutomaticChecks -bool true
 defaults write "$ID" SUAutomaticallyUpdate -bool true
 defaults write "$ID" SULastCheckTime -date "2020-01-01 00:00:00 +0000"
+defaults write "$ID" tab umwandeln  # nicht im Paperless-Reiter starten (Schlüsselbund-Abfrage nach Neusignieren)
 open "$APP"
 
 for _ in $(seq 1 60); do grep -q "GET /update.dmg" "$W/server.log" && break; sleep 2; done

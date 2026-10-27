@@ -10,9 +10,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         QuickAction.setUp()
-        #if SPARKLE
-        _ = Updates.controller  // Sparkle starten (sucht im Hintergrund, installiert beim Beenden)
-        #endif
         // SIGTERM (z. B. Abmelden per Skript) wie „Beenden“ behandeln, damit fertige Updates installiert werden
         signal(SIGTERM, SIG_IGN)
         termination = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
@@ -24,6 +21,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct PDFMRCApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var store = SettingsStore()
+
+    init() {
+        #if SPARKLE
+        _ = Updates.controller  // Sparkle früh starten (sucht im Hintergrund, installiert beim Beenden)
+        #endif
+    }
 
     var body: some Scene {
         WindowGroup("PDF MRC") {
@@ -247,9 +250,12 @@ struct PaperlessView: View {
         }
         .formStyle(.grouped)
         .onAppear {
-            if !tokenLoaded {
-                token = PaperlessToken.load() ?? ""
-                tokenLoaded = true
+            guard !tokenLoaded else { return }
+            tokenLoaded = true
+            // Im Hintergrund: nach einem Update fragt macOS ggf. nach dem Schlüsselbund-Zugriff
+            Task.detached {
+                let stored = PaperlessToken.load() ?? ""
+                await MainActor.run { token = stored }
             }
         }
     }
