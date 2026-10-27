@@ -19,11 +19,13 @@ mkdir -p "$W/src" "$W/srv"
 plist() { /usr/libexec/PlistBuddy -c "$1" "$2"; }
 sparkle_log() { log show --last 10m --style compact --predicate 'subsystem BEGINSWITH "org.sparkle-project"' | tail -40; }
 
-# Test-Schlüssel (nur für diesen Test) in die installierte App eintragen
+# Test-Schlüssel und lokalen Feed (nur für diesen Test) in die installierte App eintragen
+# (Sparkle 2 liest den Feed aus dem Info.plist, nicht aus den Benutzereinstellungen)
 SPARKLE_PRIVATE_KEY="$(head -c 32 /dev/urandom | base64)"
 export SPARKLE_PRIVATE_KEY
 public="$(python3 build/ed25519_public.py)"
 plist "Set :SUPublicEDKey $public" "$APP/Contents/Info.plist"
+plist "Set :SUFeedURL http://127.0.0.1:$PORT/appcast.xml" "$APP/Contents/Info.plist"
 codesign --force --sign - "$APP"
 old_build="$(plist 'Print :CFBundleVersion' "$APP/Contents/Info.plist")"
 
@@ -41,8 +43,7 @@ python3 build/appcast.py --version 99.0.0 --build 999999 --url "http://127.0.0.1
 server=$!
 trap 'kill $server 2>/dev/null || true' EXIT
 
-# App auf den lokalen Feed umstellen; letzte Prüfung liegt lange zurück → sie prüft sofort
-defaults write "$ID" SUFeedURL "http://127.0.0.1:$PORT/appcast.xml"
+# Letzte Prüfung liegt lange zurück → die App prüft sofort
 defaults write "$ID" SUEnableAutomaticChecks -bool true
 defaults write "$ID" SUAutomaticallyUpdate -bool true
 defaults write "$ID" SULastCheckTime -date "2020-01-01 00:00:00 +0000"
@@ -68,4 +69,3 @@ fi
 codesign --verify --deep --strict "$APP"
 echo "ok: Update von Build $old_build auf 999999 installiert, Signatur gültig"
 
-defaults delete "$ID" SUFeedURL || true
