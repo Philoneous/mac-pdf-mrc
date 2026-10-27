@@ -17,22 +17,34 @@ import pymupdf
 from paperless_mock import TOKEN, Paperless
 from test_app import BIN, SETTINGS, blank_image, profile, scan_image, sha, write_scan
 
-SERVICE = "io.github.philoneous.mac-pdf-mrc.paperless"
 RESOURCES = BIN.parent.parent / "Resources"
 
 
+def run(args: list[str], stdin: str | None = None) -> str:
+    """Startet die App; hängt sie, wird vor dem Abbruch ein Stack-Trace (sample) ausgegeben."""
+    proc = subprocess.Popen([str(BIN), *args], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, text=True)
+    try:
+        out, _ = proc.communicate(stdin, timeout=180)
+    except subprocess.TimeoutExpired:
+        trace = subprocess.run(["sample", str(proc.pid), "2"], capture_output=True, text=True).stdout
+        proc.kill()
+        lines = [line for line in trace.splitlines() if any(k in line for k in ("Thread", "Sec", "Paperless",
+                                                                                   "Semaphore", "URLSession", "main"))]
+        raise AssertionError("App hängt: " + " ".join(args) + "\n" + "\n".join(lines[:60]))
+    print(out)
+    assert proc.returncode == 0, (proc.returncode, out)
+    return out
+
+
 def set_token(token: str) -> None:
-    subprocess.run(["security", "add-generic-password", "-U", "-s", SERVICE, "-a", "api-token", "-w", token,
-                    "-T", str(BIN)], check=True)
+    run(["--paperless-token"], stdin=token + "\n")
 
 
 def run_app(flag: str, *files: Path, url: str) -> str:
     SETTINGS.parent.mkdir(parents=True, exist_ok=True)
     SETTINGS.write_text(json.dumps({"manual": profile(), "quickAction": profile(), "paperlessURL": url}))
-    res = subprocess.run([str(BIN), flag, *map(str, files)], capture_output=True, text=True, timeout=600)
-    print(res.stdout, res.stderr, sep="\n")
-    assert res.returncode == 0, res.returncode
-    return res.stdout
+    return run([flag, *map(str, files)])
 
 
 def main() -> None:
