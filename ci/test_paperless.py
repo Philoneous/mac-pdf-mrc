@@ -59,7 +59,7 @@ def main() -> None:
                        ("Komprimieren und an Paperless senden", "--paperless-komprimiert")):
         with open(RESOURCES / f"{name}.workflow/Contents/document.wflow", "rb") as f:
             cmd = plistlib.load(f)["actions"][0]["action"]["ActionParameters"]["COMMAND_STRING"]
-        assert cmd == f'"{BIN}" {flag} "$@"', cmd
+        assert cmd == f'"__APP_EXECUTABLE__" {flag} "$@"', cmd  # Pfad trägt die App beim Einrichten ein
         with open(RESOURCES / f"{name}.workflow/Contents/Info.plist", "rb") as f:
             assert plistlib.load(f)["NSServices"][0]["NSMenuItem"]["default"] == name
     print("ok: Vorlagen der Schnellaktionen")

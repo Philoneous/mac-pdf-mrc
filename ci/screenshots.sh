@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # CI: App starten und je Reiter ein Bildschirmfoto aufnehmen (shots/*.png).
 set -euo pipefail
-APP="$HOME/Applications/PDF MRC.app"
+APP="${MRC_APP:-$HOME/Applications/PDF MRC.app}"
 mkdir -p shots
 
 shot() {

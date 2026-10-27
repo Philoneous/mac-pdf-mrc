@@ -6,6 +6,7 @@ import Foundation
 ///   --paperless <PDFs…>             Original an Paperless senden
 ///   --paperless-komprimiert <PDFs…> komprimieren (Kontextmenü-Profil) und an Paperless senden
 ///   --paperless-token               API-Token von der Standardeingabe in den Schlüsselbund (für Skripte)
+///   --schnellaktionen-einrichten    Schnellaktionen einrichten/aktualisieren (wie beim Start der App)
 /// Ohne diese Argumente startet die App.
 @main
 enum Main {
@@ -17,6 +18,7 @@ enum Main {
         case "--kontextmenue": ContextMenuRun.run(files)
         case "--paperless": PaperlessRun.run(files, compress: false)
         case "--paperless-komprimiert": PaperlessRun.run(files, compress: true)
+        case "--schnellaktionen-einrichten": QuickAction.setUp()
         case "--paperless-token":
             do {
                 try PaperlessToken.save(readLine(strippingNewline: true) ?? "")

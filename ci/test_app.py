@@ -8,6 +8,7 @@ Aufruf mit dem Python von paperless-mrc (hat pymupdf, numpy, Pillow):
 import hashlib
 import io
 import json
+import os
 import plistlib
 import subprocess
 import sys
@@ -18,7 +19,8 @@ import pymupdf
 from PIL import Image
 
 HOME = Path.home()
-BIN = HOME / "Applications/PDF MRC.app/Contents/MacOS/pdf-mrc"
+APP = Path(os.environ.get("MRC_APP", HOME / "Applications/PDF MRC.app"))  # DMG-Test: /Applications
+BIN = APP / "Contents/MacOS/pdf-mrc"
 SETTINGS = HOME / "Library/Application Support/mac-pdf-mrc/settings.json"
 WORKFLOW = HOME / "Library/Services/PDF komprimieren (MRC).workflow"
 LETTER = ["Stadtwerke Musterstadt GmbH", "Jahresabrechnung 2025 fuer Wasser und Waerme",
@@ -86,6 +88,9 @@ def main() -> None:
     with open(WORKFLOW / "Contents/document.wflow", "rb") as f:
         cmd = plistlib.load(f)["actions"][0]["action"]["ActionParameters"]["COMMAND_STRING"]
     assert f'"{BIN}" --kontextmenue "$@"' == cmd, cmd
+    with open(WORKFLOW / "Contents/Info.plist", "rb") as f:
+        title = plistlib.load(f)["NSServices"][0]["NSMenuItem"]["default"]
+    assert title == "Compress PDF (MRC)", title  # Runner: Systemsprache Englisch
     print("ok: Schnellaktion eingerichtet")
 
     # Kopie: Scan wird komprimiert, leere Seite entfernt, Original unverändert; digitale PDF ohne Ergebnis

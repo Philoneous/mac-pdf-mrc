@@ -24,7 +24,39 @@ enum ConversionError: LocalizedError {
 /// Ruft paperless-mrc auf einer Kopie der PDF auf (Schnittstelle wie in Paperless: DOCUMENT_WORKING_PATH).
 /// paperless-mrc ersetzt die Kopie nur, wenn das Ergebnis geprüft und kleiner ist.
 enum Converter {
-    static var tool: URL {
+    /// So wird paperless-mrc gestartet.
+    struct Runtime {
+        let executable: URL
+        let arguments: [String]
+        let path: [String]
+        let environment: [String: String]
+    }
+
+    /// Eigenständige App: Python, paperless-mrc und Werkzeuge liegen im App-Paket (build_app.sh --standalone).
+    /// Sonst Homebrew-Installation (install.sh): paperless-mrc laut Info.plist, Werkzeuge aus Homebrew.
+    static var runtime: Runtime? {
+        let fm = FileManager.default
+        let contents = Bundle.main.bundleURL.appendingPathComponent("Contents")
+        let resources = contents.appendingPathComponent("Resources")
+        let python = resources.appendingPathComponent("python/bin/python3")
+        if fm.isExecutableFile(atPath: python.path) {
+            return Runtime(executable: python, arguments: ["-m", "paperless_mrc.main"],
+                           path: [python.deletingLastPathComponent().path, contents.appendingPathComponent("Helpers").path,
+                                  "/usr/bin", "/bin", "/usr/sbin", "/sbin"],
+                           environment: ["TESSDATA_PREFIX": resources.appendingPathComponent("tessdata").path,
+                                         "FONTCONFIG_FILE": resources.appendingPathComponent("fonts/fonts.conf").path,
+                                         // das App-Paket bleibt unverändert (Signatur), keine fremden Pakete
+                                         "PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1"])
+        }
+        let tool = homebrewTool
+        guard fm.isExecutableFile(atPath: tool.path) else { return nil }
+        return Runtime(executable: tool, arguments: [],
+                       path: [tool.deletingLastPathComponent().path, "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin",
+                              "/bin"],
+                       environment: [:])
+    }
+
+    private static var homebrewTool: URL {
         if let path = Bundle.main.object(forInfoDictionaryKey: "MRCPaperlessPath") as? String {
             return URL(fileURLWithPath: path)
         }
@@ -42,7 +74,7 @@ enum Converter {
 
     static func compressCopy(_ src: URL, with profile: Profile) throws -> CompressedCopy {
         let fm = FileManager.default
-        guard fm.isExecutableFile(atPath: tool.path) else { throw ConversionError.toolMissing(tool.path) }
+        guard let runtime else { throw ConversionError.toolMissing(homebrewTool.path) }
 
         // Arbeitskopie auf demselben Laufwerk, unter dem Originalnamen (für die Meldungen)
         let workDir = try fm.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: src,
@@ -53,7 +85,7 @@ enum Converter {
 
             let prefix = "paperless-mrc: "
             let resultPrefix = "paperless-mrc-result: "
-            let output = try run(on: work, with: profile).split(separator: "\n").map(String.init)
+            let output = try run(runtime, on: work, with: profile).split(separator: "\n").map(String.init)
             let lines = output.filter { $0.hasPrefix(prefix) }.map { String($0.dropFirst(prefix.count)) }
             // Ergebnis aus der maschinenlesbaren Zeile (übersetzbar); ältere paperless-mrc: letzte Meldung
             var message: String
@@ -114,14 +146,17 @@ enum Converter {
         return Conversion(message: message, log: log, output: dest)
     }
 
-    private static func run(on work: URL, with profile: Profile) throws -> String {
+    private static func run(_ runtime: Runtime, on work: URL, with profile: Profile) throws -> String {
         let process = Process()
-        process.executableURL = tool
+        process.executableURL = runtime.executable
+        process.arguments = runtime.arguments
         var env = ProcessInfo.processInfo.environment
+        env["PYTHONPATH"] = nil
+        env["PYTHONHOME"] = nil
+        env.merge(runtime.environment) { $1 }
         env.merge(profile.environment) { $1 }
         env["DOCUMENT_WORKING_PATH"] = work.path
-        env["PATH"] = [tool.deletingLastPathComponent().path, "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin",
-                       "/bin"].joined(separator: ":")
+        env["PATH"] = runtime.path.joined(separator: ":")
         process.environment = env
         let pipe = Pipe()
         process.standardOutput = pipe

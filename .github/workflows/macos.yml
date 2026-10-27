@@ -4,17 +4,23 @@ on:
   push:
   workflow_dispatch:
 
+env:
+  HOMEBREW_NO_AUTO_UPDATE: "1"
+  HOMEBREW_NO_INSTALL_CLEANUP: "1"
+
 jobs:
-  test:
+  app:
+    name: App (DMG)
     runs-on: macos-15
     permissions:
       contents: write  # nur für den Branch ci-screenshots
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
-      HOMEBREW_NO_AUTO_UPDATE: "1"
-      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+      MRC_APP: /Applications/PDF MRC.app
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Build-Nummer = Anzahl Commits
 
       - name: Übersetzungen prüfen
         run: python3 ci/check_strings.py
@@ -22,14 +28,25 @@ jobs:
       - name: Swift prüfen (schnell)
         run: xcrun swiftc -swift-version 5 -parse-as-library -target arm64-apple-macos13.0 -typecheck App/Sources/*.swift
 
-      - name: Installer
-        run: SRC_DIR="$GITHUB_WORKSPACE" /bin/bash ci/report.sh Installer /bin/bash install.sh
+      - name: App bauen
+        run: /bin/bash ci/report.sh Bauen /bin/bash build/build_app.sh dist --standalone
+
+      - name: DMG
+        run: /bin/bash ci/report.sh DMG /bin/bash build/make_dmg.sh dist dist/PDF-MRC.dmg
+
+      - name: Aus dem DMG installieren, Homebrew ausblenden
+        run: |
+          hdiutil attach -quiet -nobrowse -mountpoint /tmp/pdfmrc dist/PDF-MRC.dmg
+          ditto "/tmp/pdfmrc/PDF MRC.app" "$MRC_APP"
+          hdiutil detach -quiet /tmp/pdfmrc
+          sudo mv /opt/homebrew /opt/homebrew-ausgeblendet
+          "$MRC_APP/Contents/MacOS/pdf-mrc" --schnellaktionen-einrichten
 
       - name: Kontextmenü-Modus
-        run: /bin/bash ci/report.sh Kontextmenü "$(uv tool dir)/paperless-mrc/bin/python" ci/test_app.py "$RUNNER_TEMP/pdfs"
+        run: /bin/bash ci/report.sh Kontextmenü "$MRC_APP/Contents/Resources/python/bin/python3" -B ci/test_app.py "$RUNNER_TEMP/pdfs"
 
       - name: Paperless senden
-        run: /bin/bash ci/report.sh Paperless "$(uv tool dir)/paperless-mrc/bin/python" ci/test_paperless.py "$RUNNER_TEMP/paperless"
+        run: /bin/bash ci/report.sh Paperless "$MRC_APP/Contents/Resources/python/bin/python3" -B ci/test_paperless.py "$RUNNER_TEMP/paperless"
 
       - name: Oberfläche
         run: /bin/bash ci/report.sh Oberfläche /bin/bash ci/screenshots.sh
@@ -37,8 +54,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: screenshots
-          path: shots/
+          name: app
+          path: |
+            dist/PDF-MRC.dmg
+            shots/
           if-no-files-found: ignore
 
       # Nur bei manuellem Start: Bildschirmfotos zusätzlich in den Branch ci-screenshots (per Git abrufbar)
@@ -52,3 +71,21 @@ jobs:
           git add ./*.png
           git -c user.name=ci -c user.email=ci@localhost commit -q -m "Bildschirmfotos $GITHUB_SHA"
           git push -q -f "https://x-access-token:$TOKEN@github.com/$GITHUB_REPOSITORY" ci-screenshots
+
+  homebrew:
+    name: Homebrew-Installer (Backup)
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Installer
+        run: SRC_DIR="$GITHUB_WORKSPACE" /bin/bash ci/report.sh Installer /bin/bash install.sh
+
+      - name: Kontextmenü-Modus
+        run: /bin/bash ci/report.sh Kontextmenü "$(uv tool dir)/paperless-mrc/bin/python" ci/test_app.py "$RUNNER_TEMP/pdfs"
+
+      - name: Paperless senden
+        run: /bin/bash ci/report.sh Paperless "$(uv tool dir)/paperless-mrc/bin/python" ci/test_paperless.py "$RUNNER_TEMP/paperless"
