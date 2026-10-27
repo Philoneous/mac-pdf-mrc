@@ -94,7 +94,8 @@ struct PaperlessClient {
     /// Lädt eine Datei hoch (POST /api/documents/post_document/); Rückgabe: ID der Verarbeitungsaufgabe.
     func upload(_ file: URL, filename: String) async throws -> String {
         let boundary = "mac-pdf-mrc-\(UUID().uuidString)"
-        let safeName = filename.replacingOccurrences(of: "\"", with: "'")
+        // macOS liefert Umlaute in Pfaden zerlegt (NFD); Browser und Paperless erwarten zusammengesetzte (NFC)
+        let safeName = filename.precomposedStringWithCanonicalMapping.replacingOccurrences(of: "\"", with: "'")
             .components(separatedBy: .newlines).joined(separator: " ")
         var body = Data()
         body.append(Data(("--\(boundary)\r\nContent-Disposition: form-data; name=\"document\"; "

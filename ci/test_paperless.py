@@ -83,8 +83,9 @@ def main() -> None:
     # Originale senden (zwei Dateien in einem Aufruf)
     out = run_app("--paperless", scan, digital, url=url + "/")
     assert "In Paperless angelegt (Dokument #42)" in out and "In Paperless angelegt (Dokument #43)" in out, out
-    assert server.uploads[0] == ("Brief ä.pdf", scan.read_bytes())
-    assert server.uploads[1] == ("digital.pdf", digital.read_bytes())
+    for (name, data), path in zip(server.uploads, (scan, digital)):
+        assert name == path.name, (ascii(name), ascii(path.name))  # Umlaut zusammengesetzt (NFC)
+        assert data == path.read_bytes(), (len(data), path.stat().st_size)
     print("ok: Original senden")
 
     # Komprimiert senden: kleiner, leere Seite entfernt, Text vorhanden
