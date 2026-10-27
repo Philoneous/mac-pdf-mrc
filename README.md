@@ -33,6 +33,7 @@ Einstellungen (je Profil, *Standardwerte wiederherstellen* setzt sie zurück):
 | Sprachen | `deu+eng+pol` | Tesseract-Sprachen; installiert sind alle (`tesseract-lang`) |
 | Seiten automatisch drehen / Mindestsicherheit | an / 12 | nur Seiten ohne übernommene Textebene |
 | Schräglage begradigen / erst ab / Suchbereich ± | an / 0,2° / 5° | Ergebnis am Rand des Suchbereichs gilt als unklar → keine Korrektur |
+| Mindestdeutlichkeit Schräglage | 1,3 | nur begradigen, wenn sich der beste Winkel deutlich abhebt; verhindert, dass Logos oder Stempel auf textarmen Seiten eine gerade Seite schief drehen |
 | **Leere Seiten** | | |
 | Leere gescannte Seiten entfernen | an | |
 | Leer unter Tintenanteil (%) | 0,005 | eine Seite mit nur einer Seitenzahl liegt bei ca. 0,05 % |
@@ -56,6 +57,26 @@ Ist keine Verkleinerung möglich (keine gescannten Seiten, digital signiert, Erg
 keine Datei und das Original bleibt, wie es ist. Eine schon vorhandene Kopie wird nicht überschrieben.
 
 Gespeichert werden die Einstellungen in `~/Library/Application Support/mac-pdf-mrc/settings.json`.
+
+**Reiter „Paperless“:** Adresse des Paperless-ngx-Servers und API-Token (in Paperless unter *Mein Profil*), *Speichern
+und Verbindung testen*, dazu zwei weitere Schnellaktionen ein- und ausschalten:
+
+- **An Paperless senden** – schickt die PDF unverändert; Paperless (mit paperless-mrc) komprimiert sie dort.
+- **Komprimieren und an Paperless senden** – komprimiert vorher auf dem Mac (Einstellungen aus dem Reiter
+  „Kontextmenü“) und schickt das Ergebnis; ist keine Verkleinerung möglich, das Original. paperless-mrc auf dem Server
+  lässt eine so komprimierte Datei unverändert (sie besteht nicht mehr aus einem einzelnen Seitenbild), es wird also
+  nicht doppelt umgewandelt.
+
+In beiden Fällen bleibt die Datei auf dem Mac unverändert. Die App lädt über `/api/documents/post_document/` hoch,
+wartet bis zu drei Minuten auf das Ergebnis (`/api/tasks/`) und meldet es als Mitteilung: angelegtes Dokument (mit
+Nummer), Duplikat oder Fehler. Verbindung und Token werden vor dem Upload geprüft.
+
+- Das Token liegt im macOS-Schlüsselbund, nicht in `settings.json`. Weil die App bei jedem Update neu gebaut wird,
+  fragt macOS nach einem Update einmal, ob sie weiter darauf zugreifen darf (*Immer erlauben*).
+- Im Heimnetz fragt macOS beim ersten Senden, ob die App Geräte im lokalen Netz erreichen darf.
+- **Von unterwegs** nur über HTTPS (z. B. Reverse-Proxy mit Zertifikat) oder ein VPN – bei `http://` gehen Token und
+  Dokumente im Klartext durchs Netz; die App weist darauf hin. Selbstsignierte Zertifikate werden nicht akzeptiert.
+- Für Skripte: `echo TOKEN | "$HOME/Applications/PDF MRC.app/Contents/MacOS/pdf-mrc" --paperless-token` speichert das Token.
 
 ## Installation
 
@@ -89,8 +110,9 @@ Der Installer
 ## Entwicklung
 
 Bei jedem Push baut und testet GitHub Actions auf einem macOS-Runner (`.github/workflows/macos.yml`): Installer aus
-dem Checkout, Ende-zu-Ende-Test des Kontextmenü-Modus (`ci/test_app.py`) und je ein Bildschirmfoto der beiden Reiter
-(Artefakt `screenshots`; bei manuellem Start zusätzlich im Branch `ci-screenshots`). Schlägt ein Schritt fehl,
+dem Checkout, Ende-zu-Ende-Test des Kontextmenü-Modus (`ci/test_app.py`), Senden an Paperless gegen einen
+Ersatzserver, der sich wie Paperless-ngx 3.3.0 verhält (`ci/test_paperless.py`, `ci/paperless_mock.py`), und je ein
+Bildschirmfoto der Reiter (Artefakt `screenshots`; bei manuellem Start zusätzlich im Branch `ci-screenshots`). Schlägt ein Schritt fehl,
 stehen die letzten Ausgabezeilen als Annotation am Lauf. Lokal: `SRC_DIR=$PWD bash install.sh`.
 
 Die App ruft paperless-mrc wie Paperless auf: Umgebungsvariable `DOCUMENT_WORKING_PATH` auf eine Kopie, Einstellungen

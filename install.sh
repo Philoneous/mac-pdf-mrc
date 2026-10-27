@@ -77,6 +77,8 @@ cat > "$BUILD/Contents/Info.plist" <<EOF
 	<string>13.0</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>PDF MRC sendet Dokumente an deinen Paperless-Server im lokalen Netz.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
