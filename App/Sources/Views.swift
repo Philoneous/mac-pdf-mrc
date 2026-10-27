@@ -96,7 +96,7 @@ struct ConvertView: View {
             .frame(height: 86)
             .overlay {
                 VStack(spacing: 8) {
-                    Text(file?.lastPathComponent ?? "PDF hierher ziehen")
+                    Text(file?.lastPathComponent ?? L("PDF hierher ziehen"))
                         .font(.headline)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -156,8 +156,7 @@ struct ContextMenuView: View {
                         enabled = QuickAction.compress.isInstalled
                     }
                 }
-            Text("Rechtsklick auf eine oder mehrere PDFs → Schnellaktionen. Dabei gelten die Einstellungen unten "
-                 + "(auch für „Komprimieren und an Paperless senden“); das Ergebnis erscheint als Mitteilung.")
+            Text("Rechtsklick auf eine oder mehrere PDFs → Schnellaktionen. Dabei gelten die Einstellungen unten (auch für „Komprimieren und an Paperless senden“); das Ergebnis erscheint als Mitteilung.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -202,8 +201,7 @@ struct PaperlessView: View {
                     Text(status).foregroundStyle(statusOK ? Color.green : Color.red)
                 }
                 if store.settings.paperlessURL.lowercased().hasPrefix("http://") {
-                    Text("Unverschlüsselt (http): Von unterwegs nur über HTTPS (z. B. Reverse-Proxy) oder ein VPN "
-                         + "verbinden – sonst gehen Token und Dokumente im Klartext durchs Netz.")
+                    Text("Unverschlüsselt (http): Von unterwegs nur über HTTPS (z. B. Reverse-Proxy) oder ein VPN verbinden – sonst gehen Token und Dokumente im Klartext durchs Netz.")
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
@@ -213,9 +211,7 @@ struct PaperlessView: View {
                     .onChange(of: sendEnabled) { on in sendEnabled = apply(.send, on) }
                 Toggle("„Komprimieren und an Paperless senden“", isOn: $compressAndSendEnabled)
                     .onChange(of: compressAndSendEnabled) { on in compressAndSendEnabled = apply(.compressAndSend, on) }
-                Text("Die Datei auf dem Mac bleibt unverändert. Beim Komprimieren gelten die Einstellungen im Reiter "
-                     + "„Kontextmenü“; Paperless komprimiert eine so gesendete Datei nicht noch einmal. Das Ergebnis "
-                     + "(angelegtes Dokument, Duplikat oder Fehler) erscheint als Mitteilung.")
+                Text("Die Datei auf dem Mac bleibt unverändert. Beim Komprimieren gelten die Einstellungen im Reiter „Kontextmenü“; Paperless komprimiert eine so gesendete Datei nicht noch einmal. Das Ergebnis (angelegtes Dokument, Duplikat oder Fehler) erscheint als Mitteilung.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -254,7 +250,7 @@ struct PaperlessView: View {
             do {
                 try PaperlessToken.save(token)
                 try await PaperlessClient(address: address, token: token).check()
-                status = "Verbindung in Ordnung"
+                status = L("Verbindung in Ordnung")
                 statusOK = true
             } catch {
                 status = error.localizedDescription
@@ -276,8 +272,7 @@ struct ProfileForm: View {
                 Toggle("Auch PDFs mit digitalen Seiten bearbeiten", isOn: $profile.mixedPdfs)
                     .help("Digitale Seiten bleiben dabei unverändert. Aus: nur PDFs, die ausschließlich aus Scans bestehen.")
                 Toggle("Fotoseiten unverändert lassen", isOn: $profile.skipPhotos)
-                    .help("MRC verschlechtert Fotos sichtbar. Seiten mit wenig Papierfläche (Fotos, aber auch farbig "
-                          + "hinterlegter Text) gelten nur mit genug erkanntem Text als Dokument.")
+                    .help("MRC verschlechtert Fotos sichtbar. Seiten mit wenig Papierfläche (Fotos, aber auch farbig hinterlegter Text) gelten nur mit genug erkanntem Text als Dokument.")
                 TextField("Texterkennung prüft unter Papierfläche (%)", value: $profile.photoPaperPercent,
                           format: .number.precision(.fractionLength(0...1)))
                     .disabled(!profile.skipPhotos)
@@ -316,13 +311,11 @@ struct ProfileForm: View {
                 TextField("Suchbereich ± (Grad)", value: $profile.deskewMaxAngle,
                           format: .number.precision(.fractionLength(0...1)))
                     .disabled(!profile.deskew)
-                    .help("Ein Ergebnis am Rand gilt als unklar (z. B. Seite ohne Textzeilen) und wird nicht korrigiert. "
-                          + "Standard: 5.")
+                    .help("Ein Ergebnis am Rand gilt als unklar (z. B. Seite ohne Textzeilen) und wird nicht korrigiert. Standard: 5.")
                 TextField("Mindestdeutlichkeit Schräglage", value: $profile.deskewConfidence,
                           format: .number.precision(.fractionLength(0...2)))
                     .disabled(!profile.deskew)
-                    .help("Nur begradigen, wenn sich der beste Winkel so deutlich abhebt (× Median). Verhindert, dass "
-                          + "Logos oder Stempel auf textarmen Seiten eine gerade Seite schief drehen. Standard: 1,3.")
+                    .help("Nur begradigen, wenn sich der beste Winkel so deutlich abhebt (× Median). Verhindert, dass Logos oder Stempel auf textarmen Seiten eine gerade Seite schief drehen. Standard: 1,3.")
             }
             Section("Leere Seiten") {
                 Toggle("Leere gescannte Seiten entfernen", isOn: $profile.removeBlank)
@@ -342,7 +335,7 @@ struct ProfileForm: View {
                     Text("1/3").tag(3)
                     Text("1/4").tag(4)
                 }
-                LabeledContent("Kompressionsrate: \(Int(profile.bgRate))") {
+                LabeledContent(L("Kompressionsrate: %lld", Int(profile.bgRate))) {
                     Slider(value: $profile.bgRate, in: 50...800, step: 25)
                 }
                 .help("Höher = kleinere Datei; Farbflächen und hellgraue Schrift leiden. Standard: 200.")
@@ -354,7 +347,7 @@ struct ProfileForm: View {
                     Text("400 dpi").tag(400)
                 }
                 .help("Höher aufgelöste Scans werden herunterskaliert: schneller und kleiner, feinste Details gehen verloren.")
-                LabeledContent(profile.sharpen == 0 ? "Nachschärfen: aus" : "Nachschärfen: \(profile.sharpen) %") {
+                LabeledContent(profile.sharpen == 0 ? L("Nachschärfen: aus") : L("Nachschärfen: %lld %%", profile.sharpen)) {
                     Slider(value: Binding(get: { Double(profile.sharpen) }, set: { profile.sharpen = Int($0) }),
                            in: 0...300, step: 25)
                 }
@@ -363,12 +356,11 @@ struct ProfileForm: View {
                           format: .number.precision(.fractionLength(0...1)))
                     .disabled(profile.sharpen == 0)
                     .help("Standard: 1,5. Wird mit der Auflösung des Scans skaliert.")
-                LabeledContent("Textmaske: Faktor \(profile.maskFactor, specifier: "%.2f")") {
+                LabeledContent(L("Textmaske: Faktor %.2f", profile.maskFactor)) {
                     Slider(value: $profile.maskFactor, in: 0.1...1.0, step: 0.05)
                 }
-                .help("Kleiner = auch hellgraue Schrift bleibt scharf (mehr Pixel in der Textmaske), "
-                      + "aber eher Punkte/Rauschen. 1 = recode_pdf-Standard. Standard: 0,5.")
-                Stepper(profile.jobs == 0 ? "Gleichzeitige Seiten: automatisch" : "Gleichzeitige Seiten: \(profile.jobs)",
+                .help("Kleiner = auch hellgraue Schrift bleibt scharf (mehr Pixel in der Textmaske), aber eher Punkte/Rauschen. 1 = recode_pdf-Standard. Standard: 0,5.")
+                Stepper(profile.jobs == 0 ? L("Gleichzeitige Seiten: automatisch") : L("Gleichzeitige Seiten: %lld", profile.jobs),
                         value: $profile.jobs, in: 0...16)
                     .help("Automatisch = Anzahl der Prozessorkerne.")
             }

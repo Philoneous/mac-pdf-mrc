@@ -74,7 +74,7 @@ def main() -> None:
     files_before = sorted(p.name for p in tmp.iterdir())
 
     # Nicht eingerichtet
-    assert "nicht eingerichtet" in run_app("--paperless", scan, url="")
+    assert "not set up" in run_app("--paperless", scan, url="")
     assert not server.uploads
     print("ok: nicht eingerichtet")
 
@@ -82,7 +82,7 @@ def main() -> None:
 
     # Originale senden (zwei Dateien in einem Aufruf)
     out = run_app("--paperless", scan, digital, url=url + "/")
-    assert "In Paperless angelegt (Dokument #42)" in out and "In Paperless angelegt (Dokument #43)" in out, out
+    assert "Created in Paperless (document #42)" in out and "Created in Paperless (document #43)" in out, out
     for (name, data), path in zip(server.uploads, (scan, digital)):
         assert name == path.name, (ascii(name), ascii(path.name))  # Umlaut zusammengesetzt (NFC)
         assert data == path.read_bytes(), (len(data), path.stat().st_size)
@@ -90,7 +90,7 @@ def main() -> None:
 
     # Komprimiert senden: kleiner, leere Seite entfernt, Text vorhanden
     out = run_app("--paperless-komprimiert", scan2, url=url)
-    assert "Komprimiert (" in out and "Dokument #44" in out, out
+    assert "Compressed (" in out and "page(s), 1 blank removed" in out and "document #44" in out, out
     name, data = server.uploads[-1]
     assert name == "Rechnung.pdf"
     assert len(data) < scan2.stat().st_size / 3, (len(data), scan2.stat().st_size)
@@ -101,7 +101,7 @@ def main() -> None:
 
     # Nicht verkleinerbar: Original wird gesendet (digital.pdf ist schon als #43 vorhanden → Duplikat)
     out = run_app("--paperless-komprimiert", digital, url=url)
-    assert "Original gesendet" in out and "Duplikat von Dokument #43" in out, out
+    assert "original sent" in out and "duplicate of document #43" in out, out
     assert server.uploads[-1][1] == digital.read_bytes()
     print("ok: nicht verkleinerbar, Duplikat")
 
@@ -113,7 +113,7 @@ def main() -> None:
     # Falsches Token
     set_token("falsch")
     count = len(server.uploads)
-    assert "Zugriff verweigert (HTTP 401)" in run_app("--paperless", scan, url=url)
+    assert "Access denied (HTTP 401)" in run_app("--paperless", scan, url=url)
     assert len(server.uploads) == count
     print("ok: falsches Token")
 

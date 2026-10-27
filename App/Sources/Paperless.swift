@@ -12,14 +12,14 @@ enum PaperlessError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notConfigured:
-            return "Paperless ist nicht eingerichtet (Adresse und API-Token in der App unter „Paperless“)."
+            return L("Paperless ist nicht eingerichtet (Adresse und API-Token in der App unter „Paperless“).")
         case .invalidAddress(let address):
-            return "Ungültige Server-Adresse „\(address)“ (erwartet z. B. https://paperless.example.de)."
+            return L("Ungültige Server-Adresse „%@“ (erwartet z. B. https://paperless.example.de).", address)
         case .keychain(let status):
             let text = SecCopyErrorMessageString(status, nil) as String? ?? ""
-            return "Schlüsselbund-Fehler \(status) \(text)"
+            return L("Schlüsselbund-Fehler %lld: %@", Int(status), text)
         case .http(let code, _) where code == 401 || code == 403:
-            return "Zugriff verweigert (HTTP \(code)) – API-Token prüfen."
+            return L("Zugriff verweigert (HTTP %lld) – API-Token prüfen.", code)
         case .http(let code, let body):
             return "HTTP \(code): \(body.prefix(200))"
         case .unexpected(let text):
@@ -108,7 +108,7 @@ struct PaperlessClient {
         req.timeoutInterval = 300
         let data = try await send(req, body: body)  // URLSession setzt Content-Length (von Paperless verlangt)
         guard let taskID = (try? JSONSerialization.jsonObject(with: data, options: .fragmentsAllowed)) as? String
-        else { throw PaperlessError.unexpected("Unerwartete Antwort von Paperless: \(String(decoding: data, as: UTF8.self).prefix(200))") }
+        else { throw PaperlessError.unexpected(L("Unerwartete Antwort von Paperless: %@", String(String(decoding: data, as: UTF8.self).prefix(200)))) }
         return taskID
     }
 
@@ -129,7 +129,7 @@ struct PaperlessClient {
             return .created(int(result["document_id"]) ?? int(task["related_document"])
                             ?? (task["related_document_ids"] as? [Int])?.first)
         case "failure", "revoked":
-            let message = result["error_message"] as? String ?? task["result"] as? String ?? "unbekannter Fehler"
+            let message = result["error_message"] as? String ?? task["result"] as? String ?? L("unbekannter Fehler")
             return .failed(message)
         default:
             return .running
@@ -151,7 +151,7 @@ struct PaperlessClient {
         } else {
             (data, response) = try await URLSession.shared.data(for: req)
         }
-        guard let http = response as? HTTPURLResponse else { throw PaperlessError.unexpected("Keine HTTP-Antwort") }
+        guard let http = response as? HTTPURLResponse else { throw PaperlessError.unexpected(L("Keine HTTP-Antwort")) }
         guard (200..<300).contains(http.statusCode) else {
             throw PaperlessError.http(http.statusCode, String(decoding: data, as: UTF8.self))
         }

@@ -53,6 +53,8 @@ VERSION="$(git -C "$SRC_DIR" rev-parse --short HEAD 2>/dev/null || echo dev)"
 msg "App bauen ($VERSION)"
 BUILD="$(mktemp -d)/PDF MRC.app"
 mkdir -p "$BUILD/Contents/MacOS" "$BUILD/Contents/Resources"
+cp -R "$SRC_DIR"/App/Resources/*.lproj "$BUILD/Contents/Resources/"
+plutil -lint -s "$BUILD"/Contents/Resources/*.lproj/*.strings || die "Übersetzungsdateien ungültig."
 xcrun swiftc -swift-version 5 -parse-as-library -O -target "$(uname -m)-apple-macos13.0" \
   -o "$BUILD/Contents/MacOS/pdf-mrc" "$SRC_DIR"/App/Sources/*.swift
 
@@ -61,6 +63,8 @@ cat > "$BUILD/Contents/Info.plist" <<EOF
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
 	<key>CFBundleExecutable</key>
 	<string>pdf-mrc</string>
 	<key>CFBundleIdentifier</key>

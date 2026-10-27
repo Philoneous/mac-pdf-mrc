@@ -16,6 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Übersetzungen prüfen
+        run: python3 ci/check_strings.py
+
       - name: Swift prüfen (schnell)
         run: xcrun swiftc -swift-version 5 -parse-as-library -target arm64-apple-macos13.0 -typecheck App/Sources/*.swift
 

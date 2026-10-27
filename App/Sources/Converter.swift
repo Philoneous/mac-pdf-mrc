@@ -14,9 +14,9 @@ enum ConversionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .emptySuffix:
-            return "Der Namenszusatz darf nicht leer sein."
+            return L("Der Namenszusatz darf nicht leer sein.")
         case .toolMissing(let path):
-            return "paperless-mrc nicht gefunden (\(path)). Bitte den Installer erneut ausführen."
+            return L("paperless-mrc nicht gefunden (%@). Bitte die App neu installieren.", path)
         }
     }
 }
@@ -52,13 +52,20 @@ enum Converter {
             try fm.copyItem(at: src, to: work)
 
             let prefix = "paperless-mrc: "
-            let lines = try run(on: work, with: profile)
-                .split(separator: "\n").map(String.init)
-                .filter { $0.hasPrefix(prefix) }
-                .map { String($0.dropFirst(prefix.count)) }
-            var message = lines.last ?? "Keine Rückmeldung von paperless-mrc"
-            if message.hasPrefix(src.lastPathComponent + ": ") {
-                message.removeFirst(src.lastPathComponent.count + 2)
+            let resultPrefix = "paperless-mrc-result: "
+            let output = try run(on: work, with: profile).split(separator: "\n").map(String.init)
+            let lines = output.filter { $0.hasPrefix(prefix) }.map { String($0.dropFirst(prefix.count)) }
+            // Ergebnis aus der maschinenlesbaren Zeile (übersetzbar); ältere paperless-mrc: letzte Meldung
+            var message: String
+            if let line = output.last(where: { $0.hasPrefix(resultPrefix) }),
+               let result = try? JSONSerialization.jsonObject(with: Data(line.dropFirst(resultPrefix.count).utf8))
+                   as? [String: Any] {
+                message = describeResult(result)
+            } else {
+                message = lines.last ?? L("Keine Rückmeldung von paperless-mrc")
+                if message.hasPrefix(src.lastPathComponent + ": ") {
+                    message.removeFirst(src.lastPathComponent.count + 2)
+                }
             }
             return CompressedCopy(directory: workDir, file: work, message: message,
                                   log: lines.joined(separator: "\n"),
@@ -77,7 +84,7 @@ enum Converter {
             dest = src.deletingLastPathComponent()
                 .appendingPathComponent(src.deletingPathExtension().lastPathComponent + profile.suffix + ".pdf")
             if fm.fileExists(atPath: dest.path) {
-                return Conversion(message: "\(dest.lastPathComponent) existiert bereits – übersprungen", log: "",
+                return Conversion(message: L("%@ existiert bereits – übersprungen", dest.lastPathComponent), log: "",
                                   output: nil)
             }
         }

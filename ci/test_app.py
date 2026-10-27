@@ -104,11 +104,11 @@ def main() -> None:
         assert d.page_count == 1, d.page_count
         assert "Jahresabrechnung" in d[0].get_text(), d[0].get_text()
     assert not (tmp / "digital (komprimiert).pdf").exists()
-    assert "keine gescannten Seiten" in out, out
+    assert "no scanned pages – unchanged" in out, out
     print("ok: Kopie")
 
     # Vorhandenes Ergebnis wird nicht überschrieben
-    assert "übersprungen" in run_app(scan, quick=profile())
+    assert "already exists – skipped" in run_app(scan, quick=profile())
     print("ok: übersprungen")
 
     # Original ersetzen, leere Seiten behalten (prüft, dass Einstellungen bei paperless-mrc ankommen)
@@ -133,10 +133,20 @@ def main() -> None:
         d.saveIncr()
     out = run_app(mixed, quick=profile(mixedPdfs=False))
     assert not (tmp / "gemischt (komprimiert).pdf").exists(), out
-    assert "nicht gescannte Seiten" in out, out
+    assert "contains non-scanned pages" in out, out
     run_app(mixed, quick=profile())  # alte Einstellungsdatei ohne neue Schlüssel: Standard = bearbeiten
     assert (tmp / "gemischt (komprimiert).pdf").exists()
     print("ok: neue Einstellungen")
+
+    # Deutsche Oberfläche: Sprache nur für diese App auf Deutsch stellen
+    subprocess.run(["defaults", "write", "io.github.philoneous.mac-pdf-mrc", "AppleLanguages", "-array", "de"], check=True)
+    try:
+        german = write_scan(tmp / "deutsch.pdf", [scan_image(rng), blank_image(rng)])
+        out = run_app(german, quick=profile())
+        assert "Seite(n), 1 leere entfernt, Textebene per Tesseract" in out, out
+    finally:
+        subprocess.run(["defaults", "delete", "io.github.philoneous.mac-pdf-mrc", "AppleLanguages"], check=False)
+    print("ok: deutsche Meldungen")
 
 
 if __name__ == "__main__":
