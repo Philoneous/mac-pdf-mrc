@@ -64,6 +64,12 @@ if [[ "$MODE" == --standalone ]]; then
   rm -f "$R"/python/lib/python3.*/EXTERNALLY-MANAGED
   uv pip install --quiet --python "$PY" --system "$PACKAGE"
   PAPERLESS_VERSION="$("$PY" -c 'import importlib.metadata as m, json; d = m.distribution("paperless-mrc"); u = json.loads(d.read_text("direct_url.json") or "{}"); print(d.version + "+" + u.get("vcs_info", {}).get("commit_id", "")[:7])')"
+  # PyMuPDF 2 bringt eine KI-Layoutanalyse mit (onnxruntime, Modelle), die paperless-mrc nicht nutzt;
+  # PyMuPDF lädt sie nur, wenn vorhanden (try/except ImportError). Tests der Bibliotheken werden nicht gebraucht.
+  uv pip uninstall --quiet --python "$PY" --system onnxruntime protobuf flatbuffers pymupdf4llm pymupdf-layout || true
+  SP="$(echo "$R"/python/lib/python3.*/site-packages)"
+  rm -rf "$SP/pymupdf/layout" "$SP/pymupdf/mupdf-devel"
+  find "$SP" -type d \( -name tests -o -name test \) -prune -exec rm -rf {} +
   # Nicht benötigte Teile der Standardbibliothek
   rm -rf "$R"/python/lib/python3.*/{test,idlelib,tkinter,turtledemo,ensurepip} "$R"/python/lib/{tcl,tk,itcl,thread}* \
          "$R"/python/share "$R"/python/include
@@ -441,6 +447,9 @@ if [[ "$MODE" == --standalone ]]; then
   [[ -z "$bad" ]] || die "Externe Bibliotheken: $bad"
 fi
 
+if [[ -n "${GITHUB_ACTIONS:-}" && "$MODE" == --standalone ]]; then
+  echo "::notice title=Größe::App $(du -sh "$BUILD" | cut -f1): Python $(du -sh "$C/Resources/python" | cut -f1), Werkzeuge $(du -shc "$C/Helpers" "$C/Frameworks" | tail -1 | cut -f1), tessdata $(du -sh "$C/Resources/tessdata" | cut -f1)"
+fi
 mkdir -p "$OUT"
 rm -rf "$OUT/PDF MRC.app"
 mv "$BUILD" "$OUT/PDF MRC.app"

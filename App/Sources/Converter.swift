@@ -46,7 +46,8 @@ enum Converter {
                            environment: ["TESSDATA_PREFIX": resources.appendingPathComponent("tessdata").path,
                                          "FONTCONFIG_FILE": resources.appendingPathComponent("fonts/fonts.conf").path,
                                          // das App-Paket bleibt unverändert (Signatur), keine fremden Pakete
-                                         "PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1"])
+                                         "PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1",
+                                         "PYMUPDF_SUGGEST_LAYOUT_ANALYZER": "0"])
         }
         let tool = homebrewTool
         guard fm.isExecutableFile(atPath: tool.path) else { return nil }
