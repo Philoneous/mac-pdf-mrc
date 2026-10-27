@@ -2,19 +2,25 @@
 import Foundation
 
 /// Finder-Schnellaktion ein-/ausschalten: Workflow aus der App nach ~/Library/Services kopieren bzw. löschen.
-/// Die Vorlage legt der Installer in Contents/Resources ab.
-enum QuickAction {
-    static let fileName = "PDF komprimieren (MRC).workflow"
+/// Die Vorlagen legt der Installer in Contents/Resources ab.
+struct QuickAction {
+    let name: String
 
-    static var installedURL: URL {
+    static let compress = QuickAction(name: "PDF komprimieren (MRC)")
+    static let send = QuickAction(name: "An Paperless senden")
+    static let compressAndSend = QuickAction(name: "Komprimieren und an Paperless senden")
+
+    private var fileName: String { "\(name).workflow" }
+
+    private var installedURL: URL {
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Services/\(fileName)")
     }
 
-    static var isInstalled: Bool {
+    var isInstalled: Bool {
         FileManager.default.fileExists(atPath: installedURL.path)
     }
 
-    static func setInstalled(_ on: Bool) throws {
+    func setInstalled(_ on: Bool) throws {
         let fm = FileManager.default
         if fm.fileExists(atPath: installedURL.path) {
             try fm.removeItem(at: installedURL)

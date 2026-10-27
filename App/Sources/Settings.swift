@@ -16,6 +16,7 @@ struct Profile: Codable, Equatable {
     var deskew = true
     var deskewMinAngle = 0.2
     var deskewMaxAngle = 5.0
+    var deskewConfidence = 1.3
     // Seitenauswahl
     var mixedPdfs = true
     var skipPhotos = true
@@ -58,6 +59,7 @@ struct Profile: Codable, Equatable {
         deskew = try value(.deskew, d.deskew)
         deskewMinAngle = try value(.deskewMinAngle, d.deskewMinAngle)
         deskewMaxAngle = try value(.deskewMaxAngle, d.deskewMaxAngle)
+        deskewConfidence = try value(.deskewConfidence, d.deskewConfidence)
         mixedPdfs = try value(.mixedPdfs, d.mixedPdfs)
         skipPhotos = try value(.skipPhotos, d.skipPhotos)
         photoPaperPercent = try value(.photoPaperPercent, d.photoPaperPercent)
@@ -91,6 +93,7 @@ struct Profile: Codable, Equatable {
             "MRC_KEEP_TEXT_LAYER": flag(keepTextLayer),
             "MRC_DESKEW_MIN_ANGLE": String(deskewMinAngle),
             "MRC_DESKEW_MAX_ANGLE": String(deskewMaxAngle),
+            "MRC_DESKEW_MIN_CONFIDENCE": String(deskewConfidence),
             "MRC_MIXED_PDFS": flag(mixedPdfs),
             "MRC_SKIP_PHOTOS": flag(skipPhotos),
             "MRC_PHOTO_PAPER_PERCENT": String(photoPaperPercent),
@@ -121,6 +124,17 @@ struct Profile: Codable, Equatable {
 struct AppSettings: Codable, Equatable {
     var manual = Profile()
     var quickAction = Profile()
+    var paperlessURL = ""  // API-Token liegt im Schlüsselbund (PaperlessToken)
+
+    init() {}
+
+    /// Fehlende Schlüssel (ältere Version) erhalten den Standardwert.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        manual = try c.decodeIfPresent(Profile.self, forKey: .manual) ?? Profile()
+        quickAction = try c.decodeIfPresent(Profile.self, forKey: .quickAction) ?? Profile()
+        paperlessURL = try c.decodeIfPresent(String.self, forKey: .paperlessURL) ?? ""
+    }
 
     static let url = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Application Support/mac-pdf-mrc/settings.json")

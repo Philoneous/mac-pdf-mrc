@@ -1,18 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import Foundation
 
-/// Startpunkt: mit `--kontextmenue <PDFs…>` (Aufruf aus der Finder-Schnellaktion) ohne Oberfläche,
-/// sonst die App.
+/// Startpunkt. Aufrufe aus den Finder-Schnellaktionen laufen ohne Oberfläche:
+///   --kontextmenue <PDFs…>          komprimieren (Kontextmenü-Profil)
+///   --paperless <PDFs…>             Original an Paperless senden
+///   --paperless-komprimiert <PDFs…> komprimieren (Kontextmenü-Profil) und an Paperless senden
+/// Ohne diese Argumente startet die App.
 @main
 enum Main {
     @MainActor
     static func main() {
         let args = Array(CommandLine.arguments.dropFirst())
-        if args.first == "--kontextmenue" {
-            ContextMenuRun.run(Array(args.dropFirst()))
-            return
+        let files = Array(args.dropFirst())
+        switch args.first {
+        case "--kontextmenue": ContextMenuRun.run(files)
+        case "--paperless": PaperlessRun.run(files, compress: false)
+        case "--paperless-komprimiert": PaperlessRun.run(files, compress: true)
+        default: PDFMRCApp.main()
         }
-        PDFMRCApp.main()
     }
 }
 
@@ -28,20 +33,114 @@ enum ContextMenuRun {
             } catch {
                 text = "Fehler: \(error.localizedDescription)"
             }
-            print("\(src.lastPathComponent): \(text)")
-            notify(title: src.lastPathComponent, text: text)
+            report(src, text)
         }
     }
 
-    private static func notify(title: String, text: String) {
+    /// Ergebnis ausgeben und als Mitteilung anzeigen.
+    static func report(_ src: URL, _ text: String) {
+        print("\(src.lastPathComponent): \(text)")
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
         process.arguments = ["-e", "on run argv",
                              "-e", "display notification (item 2 of argv) with title (item 1 of argv)",
-                             "-e", "end run", title, text]
+                             "-e", "end run", src.lastPathComponent, text]
         do {
             try process.run()
             process.waitUntilExit()
         } catch {}  // Mitteilung ist nur Komfort
+    }
+}
+
+enum PaperlessRun {
+    static let waitLimit: TimeInterval = 180  // so lange auf das Ergebnis von Paperless warten
+
+    /// Lädt alle PDFs hoch (optional vorher komprimiert, die Datei auf dem Mac bleibt unverändert) und meldet,
+    /// was Paperless daraus gemacht hat.
+    static func run(_ paths: [String], compress: Bool) {
+        let settings = AppSettings.load()
+        let client: PaperlessClient
+        do {
+            client = try PaperlessClient.configured(settings)
+        } catch {
+            paths.forEach { ContextMenuRun.report(URL(fileURLWithPath: $0), "Fehler: \(error.localizedDescription)") }
+            return
+        }
+
+        // 1. hochladen
+        var pending: [(src: URL, task: String, note: String)] = []
+        for path in paths {
+            let src = URL(fileURLWithPath: path)
+            var copy: Converter.CompressedCopy?
+            defer {
+                if let copy { try? FileManager.default.removeItem(at: copy.directory) }
+            }
+            do {
+                var file = src
+                var note = ""
+                if compress {
+                    let compressed = try Converter.compressCopy(src, with: settings.quickAction)
+                    copy = compressed
+                    if compressed.changed {
+                        file = compressed.file
+                        note = "Komprimiert (\(compressed.message)). "
+                    } else {
+                        note = "Nicht komprimiert (\(compressed.message)), Original gesendet. "
+                    }
+                }
+                let task = try blocking { try await client.upload(file, filename: src.lastPathComponent) }
+                pending.append((src, task, note))
+            } catch {
+                ContextMenuRun.report(src, "Fehler: \(error.localizedDescription)")
+            }
+        }
+
+        // 2. auf Paperless warten
+        let deadline = Date().addingTimeInterval(waitLimit)
+        while !pending.isEmpty {
+            pending = pending.filter { item in
+                let state = (try? blocking { try await client.state(of: item.task) }) ?? .running
+                switch state {
+                case .running:
+                    return true
+                case .created(let id):
+                    ContextMenuRun.report(item.src, item.note + "In Paperless angelegt" + (id.map { " (Dokument #\($0))" } ?? ""))
+                case .duplicate(let id):
+                    ContextMenuRun.report(item.src, item.note + "Paperless: Duplikat"
+                                          + (id.map { " von Dokument #\($0)" } ?? "") + " – nicht übernommen")
+                case .failed(let message):
+                    ContextMenuRun.report(item.src, item.note + "Paperless-Fehler: \(message)")
+                }
+                return false
+            }
+            if pending.isEmpty { break }
+            if Date() > deadline {
+                pending.forEach {
+                    ContextMenuRun.report($0.src, $0.note + "Hochgeladen; Paperless verarbeitet noch – Ergebnis dort prüfen")
+                }
+                break
+            }
+            Thread.sleep(forTimeInterval: 2)
+        }
+    }
+
+    private final class Box<T>: @unchecked Sendable {
+        var result: Result<T, Error>?
+    }
+
+    /// Führt eine async-Funktion im Kommandozeilenmodus synchron aus.
+    private static func blocking<T>(_ work: @escaping () async throws -> T) throws -> T {
+        let box = Box<T>()
+        let done = DispatchSemaphore(value: 0)
+        Task.detached {
+            do {
+                box.result = .success(try await work())
+            } catch {
+                box.result = .failure(error)
+            }
+            done.signal()
+        }
+        done.wait()
+        return try box.result!.get()
     }
 }

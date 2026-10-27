@@ -31,6 +31,9 @@ struct ContentView: View {
             ContextMenuView()
                 .tabItem { Text("Kontextmenü") }
                 .tag("kontextmenue")
+            PaperlessView()
+                .tabItem { Text("Paperless") }
+                .tag("paperless")
         }
         .padding()
         .frame(minWidth: 560, idealWidth: 580, minHeight: 520, idealHeight: 780)
@@ -137,24 +140,24 @@ struct ConvertView: View {
 
 struct ContextMenuView: View {
     @EnvironmentObject private var store: SettingsStore
-    @State private var enabled = QuickAction.isInstalled
+    @State private var enabled = QuickAction.compress.isInstalled
     @State private var failure: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Toggle("Schnellaktion „PDF komprimieren (MRC)“ im Finder anzeigen", isOn: $enabled)
                 .onChange(of: enabled) { on in
-                    guard on != QuickAction.isInstalled else { return }
+                    guard on != QuickAction.compress.isInstalled else { return }
                     do {
-                        try QuickAction.setInstalled(on)
+                        try QuickAction.compress.setInstalled(on)
                         failure = nil
                     } catch {
                         failure = error.localizedDescription
-                        enabled = QuickAction.isInstalled
+                        enabled = QuickAction.compress.isInstalled
                     }
                 }
-            Text("Rechtsklick auf eine oder mehrere PDFs → Schnellaktionen. Dabei gelten die Einstellungen unten; "
-                 + "das Ergebnis erscheint als Mitteilung.")
+            Text("Rechtsklick auf eine oder mehrere PDFs → Schnellaktionen. Dabei gelten die Einstellungen unten "
+                 + "(auch für „Komprimieren und an Paperless senden“); das Ergebnis erscheint als Mitteilung.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -165,6 +168,99 @@ struct ContextMenuView: View {
                 store.settings.quickAction = store.settings.manual
             }
             ProfileForm(profile: $store.settings.quickAction)
+        }
+    }
+}
+
+// MARK: - Paperless
+
+struct PaperlessView: View {
+    @EnvironmentObject private var store: SettingsStore
+    @State private var token = ""
+    @State private var tokenLoaded = false
+    @State private var checking = false
+    @State private var status: String?
+    @State private var statusOK = false
+    @State private var sendEnabled = QuickAction.send.isInstalled
+    @State private var compressAndSendEnabled = QuickAction.compressAndSend.isInstalled
+    @State private var failure: String?
+
+    var body: some View {
+        Form {
+            Section("Server") {
+                TextField("Adresse", text: $store.settings.paperlessURL, prompt: Text("https://paperless.example.de"))
+                SecureField("API-Token", text: $token)
+                    .help("In Paperless unter „Mein Profil“ → API-Auth-Token. Wird im macOS-Schlüsselbund gespeichert.")
+                HStack {
+                    Button("Speichern und Verbindung testen", action: saveAndCheck)
+                        .disabled(checking)
+                    if checking {
+                        ProgressView().controlSize(.small)
+                    }
+                }
+                if let status {
+                    Text(status).foregroundStyle(statusOK ? Color.green : Color.red)
+                }
+                if store.settings.paperlessURL.lowercased().hasPrefix("http://") {
+                    Text("Unverschlüsselt (http): Von unterwegs nur über HTTPS (z. B. Reverse-Proxy) oder ein VPN "
+                         + "verbinden – sonst gehen Token und Dokumente im Klartext durchs Netz.")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
+            Section("Finder-Kontextmenü") {
+                Toggle("„An Paperless senden“ (Original)", isOn: $sendEnabled)
+                    .onChange(of: sendEnabled) { on in sendEnabled = apply(.send, on) }
+                Toggle("„Komprimieren und an Paperless senden“", isOn: $compressAndSendEnabled)
+                    .onChange(of: compressAndSendEnabled) { on in compressAndSendEnabled = apply(.compressAndSend, on) }
+                Text("Die Datei auf dem Mac bleibt unverändert. Beim Komprimieren gelten die Einstellungen im Reiter "
+                     + "„Kontextmenü“; Paperless komprimiert eine so gesendete Datei nicht noch einmal. Das Ergebnis "
+                     + "(angelegtes Dokument, Duplikat oder Fehler) erscheint als Mitteilung.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let failure {
+                    Text(failure).foregroundStyle(.red)
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .onAppear {
+            if !tokenLoaded {
+                token = PaperlessToken.load() ?? ""
+                tokenLoaded = true
+            }
+        }
+    }
+
+    /// Schaltet eine Schnellaktion; Rückgabe: tatsächlicher Zustand.
+    private func apply(_ action: QuickAction, _ on: Bool) -> Bool {
+        guard on != action.isInstalled else { return on }
+        do {
+            try action.setInstalled(on)
+            failure = nil
+        } catch {
+            failure = error.localizedDescription
+        }
+        return action.isInstalled
+    }
+
+    private func saveAndCheck() {
+        let address = store.settings.paperlessURL
+        let token = token
+        checking = true
+        status = nil
+        Task {
+            do {
+                try PaperlessToken.save(token)
+                try await PaperlessClient(address: address, token: token).check()
+                status = "Verbindung in Ordnung"
+                statusOK = true
+            } catch {
+                status = error.localizedDescription
+                statusOK = false
+            }
+            checking = false
         }
     }
 }
@@ -222,6 +318,11 @@ struct ProfileForm: View {
                     .disabled(!profile.deskew)
                     .help("Ein Ergebnis am Rand gilt als unklar (z. B. Seite ohne Textzeilen) und wird nicht korrigiert. "
                           + "Standard: 5.")
+                TextField("Mindestdeutlichkeit Schräglage", value: $profile.deskewConfidence,
+                          format: .number.precision(.fractionLength(0...2)))
+                    .disabled(!profile.deskew)
+                    .help("Nur begradigen, wenn sich der beste Winkel so deutlich abhebt (× Median). Verhindert, dass "
+                          + "Logos oder Stempel auf textarmen Seiten eine gerade Seite schief drehen. Standard: 1,3.")
             }
             Section("Leere Seiten") {
                 Toggle("Leere gescannte Seiten entfernen", isOn: $profile.removeBlank)

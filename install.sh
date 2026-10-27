@@ -18,7 +18,8 @@ PACKAGE="${PACKAGE:-git+https://github.com/Philoneous/paperless-mrc.git}"  # Ver
 SRC_DIR="${SRC_DIR:-}"  # vorhandener Checkout statt Download (Entwicklung, CI)
 APP="$HOME/Applications/PDF MRC.app"
 NAME="PDF komprimieren (MRC)"
-WORKFLOW="$HOME/Library/Services/$NAME.workflow"
+NAME_SEND="An Paperless senden"
+NAME_SEND_MRC="Komprimieren und an Paperless senden"
 
 msg() { printf '[..] %s\n' "$*"; }
 ok()  { printf '[OK] %s\n' "$*"; }
@@ -76,16 +77,23 @@ cat > "$BUILD/Contents/Info.plist" <<EOF
 	<string>13.0</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>MRCPaperlessPath</key>
 	<string>$TOOL</string>
 </dict>
 </plist>
 EOF
 
-# Vorlage der Finder-Schnellaktion (die App schaltet sie ein/aus, indem sie sie nach ~/Library/Services kopiert)
-TEMPLATE="$BUILD/Contents/Resources/$NAME.workflow"
-mkdir -p "$TEMPLATE/Contents"
-cat > "$TEMPLATE/Contents/Info.plist" <<EOF
+# Vorlagen der Finder-Schnellaktionen (die App schaltet sie ein/aus, indem sie sie nach ~/Library/Services kopiert)
+write_workflow() {
+local name="$1" flag="$2"
+local template="$BUILD/Contents/Resources/$name.workflow"
+mkdir -p "$template/Contents"
+cat > "$template/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -100,7 +108,7 @@ cat > "$TEMPLATE/Contents/Info.plist" <<EOF
 			<key>NSMenuItem</key>
 			<dict>
 				<key>default</key>
-				<string>$NAME</string>
+				<string>$name</string>
 			</dict>
 			<key>NSMessage</key>
 			<string>runWorkflowAsService</string>
@@ -119,7 +127,7 @@ cat > "$TEMPLATE/Contents/Info.plist" <<EOF
 </plist>
 EOF
 
-cat > "$TEMPLATE/Contents/document.wflow" <<EOF
+cat > "$template/Contents/document.wflow" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -181,7 +189,7 @@ cat > "$TEMPLATE/Contents/document.wflow" <<EOF
 				<key>ActionParameters</key>
 				<dict>
 					<key>COMMAND_STRING</key>
-					<string>"$APP/Contents/MacOS/pdf-mrc" --kontextmenue "\$@"</string>
+					<string>"$APP/Contents/MacOS/pdf-mrc" $flag "\$@"</string>
 					<key>CheckedForUserDefaultShell</key>
 					<true/>
 					<key>inputMethod</key>
@@ -347,9 +355,13 @@ cat > "$TEMPLATE/Contents/document.wflow" <<EOF
 </dict>
 </plist>
 EOF
+plutil -lint -s "$template/Contents/Info.plist" "$template/Contents/document.wflow" || die "Workflow $name ungültig."
+}
+write_workflow "$NAME" --kontextmenue
+write_workflow "$NAME_SEND" --paperless
+write_workflow "$NAME_SEND_MRC" --paperless-komprimiert
 
-plutil -lint -s "$BUILD/Contents/Info.plist" "$TEMPLATE/Contents/Info.plist" "$TEMPLATE/Contents/document.wflow" \
-  || die "Plist-Dateien ungültig."
+plutil -lint -s "$BUILD/Contents/Info.plist" || die "Info.plist der App ungültig."
 codesign --force --sign - "$BUILD" >/dev/null 2>&1 || die "Signieren der App fehlgeschlagen."
 first_install=true
 [[ -d "$APP" ]] && first_install=false
@@ -364,14 +376,16 @@ if [[ -f "$BIN/pdf-mrc" ]] && grep -q "Finder-Schnellaktion" "$BIN/pdf-mrc"; the
   ok "Aufrufskript der Vorversion entfernt"
 fi
 
-# ---- Schnellaktion: bei Erstinstallation einschalten, sonst Zustand beibehalten -------------------
-if $first_install || [[ -d "$WORKFLOW" ]]; then
-  rm -rf "$WORKFLOW"
-  mkdir -p "$(dirname "$WORKFLOW")"
-  cp -R "$APP/Contents/Resources/$NAME.workflow" "$WORKFLOW"
-  ok "Schnellaktion „${NAME}“ eingerichtet"
-else
-  ok "Schnellaktion bleibt ausgeschaltet (in der App einschaltbar)"
-fi
+# ---- Schnellaktionen: Komprimieren bei Erstinstallation ein, Paperless-Einträge erst nach Einrichtung in der App;
+#      bei Updates bleibt jeder Eintrag an oder aus, wie in der App eingestellt -------------------------------------
+for name in "$NAME" "$NAME_SEND" "$NAME_SEND_MRC"; do
+  workflow="$HOME/Library/Services/$name.workflow"
+  if [[ -d "$workflow" ]] || { $first_install && [[ "$name" == "$NAME" ]]; }; then
+    rm -rf "$workflow"
+    mkdir -p "$(dirname "$workflow")"
+    cp -R "$APP/Contents/Resources/$name.workflow" "$workflow"
+    ok "Schnellaktion „${name}“ eingerichtet"
+  fi
+done
 /System/Library/CoreServices/pbs -flush >/dev/null 2>&1 || true
 ok "Fertig. App „PDF MRC“ in ~/Applications; Rechtsklick auf PDFs → Schnellaktionen → „${NAME}“"

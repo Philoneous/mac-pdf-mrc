@@ -31,6 +31,44 @@ enum Converter {
         return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".local/bin/paperless-mrc")
     }
 
+    /// Komprimierte Arbeitskopie in einem temporären Ordner (vom Aufrufer zu löschen).
+    struct CompressedCopy {
+        let directory: URL
+        let file: URL      // unter dem Originalnamen; unverändert, wenn changed == false
+        let message: String
+        let log: String
+        let changed: Bool
+    }
+
+    static func compressCopy(_ src: URL, with profile: Profile) throws -> CompressedCopy {
+        let fm = FileManager.default
+        guard fm.isExecutableFile(atPath: tool.path) else { throw ConversionError.toolMissing(tool.path) }
+
+        // Arbeitskopie auf demselben Laufwerk, unter dem Originalnamen (für die Meldungen)
+        let workDir = try fm.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: src,
+                                 create: true)
+        do {
+            let work = workDir.appendingPathComponent(src.lastPathComponent)
+            try fm.copyItem(at: src, to: work)
+
+            let prefix = "paperless-mrc: "
+            let lines = try run(on: work, with: profile)
+                .split(separator: "\n").map(String.init)
+                .filter { $0.hasPrefix(prefix) }
+                .map { String($0.dropFirst(prefix.count)) }
+            var message = lines.last ?? "Keine Rückmeldung von paperless-mrc"
+            if message.hasPrefix(src.lastPathComponent + ": ") {
+                message.removeFirst(src.lastPathComponent.count + 2)
+            }
+            return CompressedCopy(directory: workDir, file: work, message: message,
+                                  log: lines.joined(separator: "\n"),
+                                  changed: !fm.contentsEqual(atPath: src.path, andPath: work.path))
+        } catch {
+            try? fm.removeItem(at: workDir)
+            throw error
+        }
+    }
+
     static func convert(_ src: URL, with profile: Profile) throws -> Conversion {
         let fm = FileManager.default
         var dest = src
@@ -43,27 +81,13 @@ enum Converter {
                                   output: nil)
             }
         }
-        guard fm.isExecutableFile(atPath: tool.path) else { throw ConversionError.toolMissing(tool.path) }
+        let copy = try compressCopy(src, with: profile)
+        defer { try? fm.removeItem(at: copy.directory) }
+        let work = copy.file
+        let message = copy.message
+        let log = copy.log
 
-        // Arbeitskopie auf demselben Laufwerk, unter dem Originalnamen (für die Meldungen)
-        let workDir = try fm.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: src,
-                                 create: true)
-        defer { try? fm.removeItem(at: workDir) }
-        let work = workDir.appendingPathComponent(src.lastPathComponent)
-        try fm.copyItem(at: src, to: work)
-
-        let prefix = "paperless-mrc: "
-        let lines = try run(on: work, with: profile)
-            .split(separator: "\n").map(String.init)
-            .filter { $0.hasPrefix(prefix) }
-            .map { String($0.dropFirst(prefix.count)) }
-        var message = lines.last ?? "Keine Rückmeldung von paperless-mrc"
-        if message.hasPrefix(src.lastPathComponent + ": ") {
-            message.removeFirst(src.lastPathComponent.count + 2)
-        }
-        let log = lines.joined(separator: "\n")
-
-        if fm.contentsEqual(atPath: src.path, andPath: work.path) {
+        if !copy.changed {
             return Conversion(message: message, log: log, output: nil)
         }
         if profile.output == .replace {

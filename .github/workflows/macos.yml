@@ -25,6 +25,9 @@ jobs:
       - name: Kontextmenü-Modus
         run: /bin/bash ci/report.sh Kontextmenü "$(uv tool dir)/paperless-mrc/bin/python" ci/test_app.py "$RUNNER_TEMP/pdfs"
 
+      - name: Paperless senden
+        run: /bin/bash ci/report.sh Paperless "$(uv tool dir)/paperless-mrc/bin/python" ci/test_paperless.py "$RUNNER_TEMP/paperless"
+
       - name: Oberfläche
         run: /bin/bash ci/report.sh Oberfläche /bin/bash ci/screenshots.sh
 

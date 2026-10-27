@@ -21,3 +21,4 @@ shot() {
 
 shot umwandeln
 shot kontextmenue
+shot paperless
