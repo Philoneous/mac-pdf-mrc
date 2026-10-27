@@ -7,6 +7,7 @@
 #  Umgebung: GITHUB_REF_NAME (Tag), GITHUB_REPOSITORY, GH_TOKEN, SPARKLE_PRIVATE_KEY (Repository-Secret)
 # =============================================================================
 set -Eeuo pipefail
+trap 'echo "[FEHLER] ${BASH_SOURCE[0]##*/} Zeile $LINENO: $BASH_COMMAND (Exit $?)" >&2' ERR
 cd "$(dirname "$0")/.."
 
 die() { printf '[FEHLER] %s\n' "$*" >&2; exit 1; }

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # DMG zum Ziehen in „Programme“: build/make_dmg.sh <Ordner mit „PDF MRC.app“> <Ziel.dmg>
 set -Eeuo pipefail
+trap 'echo "[FEHLER] ${BASH_SOURCE[0]##*/} Zeile $LINENO: $BASH_COMMAND (Exit $?)" >&2' ERR
 SRC="${1:?Ordner fehlt}"
 DMG="${2:?Ziel fehlt}"
 ROOT="$(mktemp -d)/PDF MRC"

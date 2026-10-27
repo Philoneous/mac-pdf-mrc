@@ -8,6 +8,7 @@
 #  Umgebung: MRC_APP (installierte App). Braucht build/.sparkle-*/bin/sign_update aus dem Bauschritt.
 # =============================================================================
 set -Eeuo pipefail
+trap 'echo "[FEHLER] ${BASH_SOURCE[0]##*/} Zeile $LINENO: $BASH_COMMAND (Exit $?)" >&2' ERR
 cd "$(dirname "$0")/.."
 
 APP="${MRC_APP:?}"

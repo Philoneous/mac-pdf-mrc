@@ -12,6 +12,7 @@
 #  Umgebung: VERSION (z. B. 1.2.0), BUILD_NUMBER (fortlaufend, für Updates), PACKAGE (paperless-mrc-Quelle).
 # =============================================================================
 set -Eeuo pipefail
+trap 'echo "[FEHLER] ${BASH_SOURCE[0]##*/} Zeile $LINENO: $BASH_COMMAND (Exit $?)" >&2' ERR
 
 SRC_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${1:?Zielordner fehlt}"
