@@ -19,12 +19,12 @@ mkdir -p "$W/src" "$W/srv"
 plist() { /usr/libexec/PlistBuddy -c "$1" "$2"; }
 START="$(date '+%Y-%m-%d %H:%M:%S')"
 sparkle_log() {
-  echo "--- Einstellungen"; defaults read "$ID" 2>/dev/null | grep -i '^ *"\?SU' || true
-  echo "--- Feed im Info.plist: $(plist 'Print :SUFeedURL' "$APP/Contents/Info.plist")"
-  echo "--- Prozesse"; pgrep -fl "PDF MRC" || true
   echo "--- Sparkle-Log seit $START"
-  log show --start "$START" --info --debug --style compact \
-    --predicate 'subsystem BEGINSWITH "org.sparkle-project" OR process == "pdf-mrc"' | tail -60
+  log show --start "$START" --info --debug --style compact --predicate 'subsystem BEGINSWITH "org.sparkle-project"' \
+    | cut -c 1-220 | tail -25
+  echo "--- Einstellungen: $(defaults read "$ID" 2>/dev/null | grep -E '^ *"?SU' | tr -s ' ' | tr '\n' ' ')"
+  echo "--- Feed im Info.plist: $(plist 'Print :SUFeedURL' "$APP/Contents/Info.plist")"
+  echo "--- Prozesse: $(pgrep -fl 'PDF MRC' | tr '\n' ' ')"
 }
 
 # Test-Schlüssel und lokalen Feed (nur für diesen Test) in die installierte App eintragen
