@@ -82,7 +82,9 @@ if [[ "$MODE" == --standalone ]]; then
     "$BREW"/bin/{tesseract,opj_compress,opj_decompress,jbig2,pdftoppm} || die "Bibliotheken übernehmen fehlgeschlagen."
 
   msg "Tesseract-Sprachdaten"
-  cp -R "$BREW/share/tessdata" "$R/tessdata"
+  mkdir -p "$R/tessdata"
+  cp -RL "$BREW/share/tessdata/configs" "$BREW/share/tessdata/tessconfigs" "$R/tessdata/"  # u. a. hOCR-Ausgabe
+  cp -L "$BREW/share/tessdata/eng.traineddata" "$BREW/share/tessdata/osd.traineddata" "$R/tessdata/"
   chmod -R u+w "$R/tessdata"
   for lang in $TESS_LANGS; do
     curl -fsSL -o "$R/tessdata/$lang.traineddata" "https://github.com/tesseract-ocr/tessdata_fast/raw/main/$lang.traineddata"
