@@ -21,6 +21,10 @@ PACKAGE="${PACKAGE:-git+https://github.com/Philoneous/paperless-mrc.git}"
 VERSION="${VERSION:-$(git -C "$SRC_DIR" describe --tags --always 2>/dev/null | sed 's/^v//' || echo dev)}"
 BUILD_NUMBER="${BUILD_NUMBER:-$(git -C "$SRC_DIR" rev-list --count HEAD 2>/dev/null || echo 1)}"
 TESS_LANGS="${TESS_LANGS:-deu}"  # zusätzlich zu eng und osd aus Homebrew; Quelle: tessdata_fast
+SPARKLE_VERSION="${SPARKLE_VERSION:-2.9.6}"  # Updates (nur eigenständige App)
+SPARKLE_DIR="$SRC_DIR/build/.sparkle-$SPARKLE_VERSION"  # Sparkle.framework, bin/sign_update
+SPARKLE_FEED="${SPARKLE_FEED:-https://github.com/Philoneous/mac-pdf-mrc/releases/latest/download/appcast.xml}"
+SPARKLE_PUBLIC_KEY="${SPARKLE_PUBLIC_KEY:-SrykS0Sl6v8dGZlbnI6w4D35cwaghPkH8L0ByMD2RLw=}"
 NAME="PDF komprimieren (MRC)"
 NAME_SEND="An Paperless senden"
 NAME_SEND_MRC="Komprimieren und an Paperless senden"
@@ -41,9 +45,19 @@ C="$BUILD/Contents"
 mkdir -p "$C/MacOS" "$C/Resources"
 
 # ---- Swift-App ----------------------------------------------------------------------------------
+swift_flags=()
+if [[ "$MODE" == --standalone ]]; then
+  if [[ ! -d "$SPARKLE_DIR/Sparkle.framework" ]]; then
+    msg "Sparkle $SPARKLE_VERSION laden"
+    mkdir -p "$SPARKLE_DIR"
+    curl -fsSL "https://github.com/sparkle-project/Sparkle/releases/download/$SPARKLE_VERSION/Sparkle-$SPARKLE_VERSION.tar.xz" \
+      | tar -xJ -C "$SPARKLE_DIR" || die "Sparkle konnte nicht geladen werden."
+  fi
+  swift_flags=(-D SPARKLE -F "$SPARKLE_DIR" -framework Sparkle -Xlinker -rpath -Xlinker @executable_path/../Frameworks)
+fi
 msg "App kompilieren ($VERSION, Build $BUILD_NUMBER)"
 xcrun swiftc -swift-version 5 -parse-as-library -O -target "$(uname -m)-apple-macos13.0" \
-  -o "$C/MacOS/pdf-mrc" "$SRC_DIR"/App/Sources/*.swift
+  ${swift_flags[@]+"${swift_flags[@]}"} -o "$C/MacOS/pdf-mrc" "$SRC_DIR"/App/Sources/*.swift
 cp -R "$SRC_DIR"/App/Resources/*.lproj "$C/Resources/"
 plutil -lint -s "$C"/Resources/*.lproj/*.strings || die "Übersetzungsdateien ungültig."
 
@@ -52,6 +66,7 @@ PAPERLESS_VERSION="extern"
 if [[ "$MODE" == --standalone ]]; then
   R="$C/Resources"; H="$C/Helpers"; F="$C/Frameworks"
   mkdir -p "$H" "$F"
+  ditto "$SPARKLE_DIR/Sparkle.framework" "$F/Sparkle.framework"
 
   msg "Bauwerkzeuge aus Homebrew"
   brew install --quiet uv tesseract openjpeg poppler jbig2enc
@@ -112,6 +127,17 @@ fi
 
 # ---- Info.plist ------------------------------------------------------------------------------------
 EXTRA_PLIST=""
+if [[ "$MODE" == --standalone ]]; then
+  EXTRA_PLIST="	<key>SUFeedURL</key>
+	<string>$SPARKLE_FEED</string>
+	<key>SUPublicEDKey</key>
+	<string>$SPARKLE_PUBLIC_KEY</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
+"
+fi
 if [[ "$MODE" == --homebrew ]]; then
   EXTRA_PLIST="	<key>MRCPaperlessPath</key>
 	<string>$PAPERLESS_TOOL</string>
@@ -433,6 +459,12 @@ while IFS= read -r -d '' f; do
     codesign --force --sign - "$f" >/dev/null 2>&1 || die "Signieren fehlgeschlagen: $f"
   fi
 done < <(find "$C/Frameworks" "$C/Helpers" "$C/Resources" -type f -print0 2>/dev/null)
+if [[ -d "$C/Frameworks/Sparkle.framework" ]]; then  # eingebettete Bundles von innen nach außen
+  SPV="$C/Frameworks/Sparkle.framework/Versions/B"
+  for b in "$SPV"/XPCServices/*.xpc "$SPV/Updater.app" "$SPV/Autoupdate" "$C/Frameworks/Sparkle.framework"; do
+    codesign --force --sign - "$b" >/dev/null 2>&1 || die "Signieren fehlgeschlagen: $b"
+  done
+fi
 codesign --force --sign - "$BUILD" >/dev/null 2>&1 || die "Signieren der App fehlgeschlagen."
 codesign --verify --deep --strict "$BUILD" || die "Signatur ungültig."
 if [[ "$MODE" == --standalone ]]; then

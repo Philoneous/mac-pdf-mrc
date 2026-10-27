@@ -4,10 +4,20 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var termination: DispatchSourceSignal?
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         QuickAction.setUp()
+        #if SPARKLE
+        _ = Updates.controller  // Sparkle starten (sucht im Hintergrund, installiert beim Beenden)
+        #endif
+        // SIGTERM (z. B. Abmelden per Skript) wie „Beenden“ behandeln, damit fertige Updates installiert werden
+        signal(SIGTERM, SIG_IGN)
+        termination = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
+        termination?.setEventHandler { NSApp.terminate(nil) }
+        termination?.resume()
     }
 }
 
@@ -21,6 +31,17 @@ struct PDFMRCApp: App {
         }
         .defaultSize(width: 580, height: 780)
         .windowResizability(.contentMinSize)
+        .commands {
+            if Updates.available {
+                CommandGroup(after: .appInfo) {
+                    Button("Nach Updates suchen …") { Updates.checkNow() }
+                }
+            }
+        }
+
+        Settings {
+            SettingsView()
+        }
     }
 }
 

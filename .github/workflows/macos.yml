@@ -2,6 +2,8 @@ name: macOS
 
 on:
   push:
+    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 env:
@@ -13,7 +15,7 @@ jobs:
     name: App (DMG)
     runs-on: macos-15
     permissions:
-      contents: write  # nur für den Branch ci-screenshots
+      contents: write  # Branch ci-screenshots und Releases
     timeout-minutes: 60
     env:
       MRC_APP: /Applications/PDF MRC.app
@@ -51,6 +53,20 @@ jobs:
 
       - name: Oberfläche
         run: /bin/bash ci/report.sh Oberfläche /bin/bash ci/screenshots.sh
+
+      - name: Update über Sparkle
+        run: /bin/bash ci/report.sh Update /bin/bash ci/test_update.sh
+
+      - name: Homebrew wieder einblenden
+        if: always()
+        run: if [ -d /opt/homebrew-ausgeblendet ]; then sudo mv /opt/homebrew-ausgeblendet /opt/homebrew; fi
+
+      - name: Release veröffentlichen
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: /bin/bash ci/report.sh Release /bin/bash build/release.sh
 
       - uses: actions/upload-artifact@v4
         if: always()
