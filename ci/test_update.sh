@@ -17,7 +17,15 @@ SIGN="$(ls -d build/.sparkle-*/bin/sign_update | tail -1)"
 W="$(mktemp -d)"
 mkdir -p "$W/src" "$W/srv"
 plist() { /usr/libexec/PlistBuddy -c "$1" "$2"; }
-sparkle_log() { log show --last 10m --style compact --predicate 'subsystem BEGINSWITH "org.sparkle-project"' | tail -40; }
+START="$(date '+%Y-%m-%d %H:%M:%S')"
+sparkle_log() {
+  echo "--- Einstellungen"; defaults read "$ID" 2>/dev/null | grep -i '^ *"\?SU' || true
+  echo "--- Feed im Info.plist: $(plist 'Print :SUFeedURL' "$APP/Contents/Info.plist")"
+  echo "--- Prozesse"; pgrep -fl "PDF MRC" || true
+  echo "--- Sparkle-Log seit $START"
+  log show --start "$START" --info --debug --style compact \
+    --predicate 'subsystem BEGINSWITH "org.sparkle-project" OR process == "pdf-mrc"' | tail -60
+}
 
 # Test-Schlüssel und lokalen Feed (nur für diesen Test) in die installierte App eintragen
 # (Sparkle 2 liest den Feed aus dem Info.plist, nicht aus den Benutzereinstellungen)
