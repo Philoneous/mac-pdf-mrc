@@ -54,7 +54,7 @@ if [[ "$MODE" == --standalone ]]; then
   mkdir -p "$H" "$F"
 
   msg "Bauwerkzeuge aus Homebrew"
-  brew install --quiet uv tesseract openjpeg poppler jbig2enc dylibbundler
+  brew install --quiet uv tesseract openjpeg poppler jbig2enc
 
   msg "Python und paperless-mrc"
   uv python install --quiet 3.13
@@ -77,14 +77,9 @@ if [[ "$MODE" == --standalone ]]; then
 
   msg "Werkzeuge aus Homebrew übernehmen"
   BREW="$(brew --prefix)"
-  tools=(tesseract opj_compress opj_decompress jbig2 pdftoppm)
-  args=()
-  for t in "${tools[@]}"; do
-    cp "$BREW/bin/$t" "$H/$t"
-    chmod u+w "$H/$t"
-    args+=(-x "$H/$t")
-  done
-  dylibbundler -of -b -cd -d "$F" -p @executable_path/../Frameworks/ "${args[@]}" >/dev/null
+  # Programme und ihre Bibliotheken (Zeitgrenze: bricht ab statt zu hängen)
+  perl -e 'alarm shift; exec @ARGV' 900 python3 "$SRC_DIR/build/bundle_dylibs.py" "$H" "$F" \
+    "$BREW"/bin/{tesseract,opj_compress,opj_decompress,jbig2,pdftoppm} || die "Bibliotheken übernehmen fehlgeschlagen."
 
   msg "Tesseract-Sprachdaten"
   cp -R "$BREW/share/tessdata" "$R/tessdata"

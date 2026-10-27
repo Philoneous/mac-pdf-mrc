@@ -29,6 +29,7 @@ jobs:
         run: xcrun swiftc -swift-version 5 -parse-as-library -target arm64-apple-macos13.0 -typecheck App/Sources/*.swift
 
       - name: App bauen
+        timeout-minutes: 30
         run: /bin/bash ci/report.sh Bauen /bin/bash build/build_app.sh dist --standalone
 
       - name: DMG
