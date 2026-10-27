@@ -53,6 +53,9 @@ if [[ "$MODE" == --standalone ]]; then
   R="$C/Resources"; H="$C/Helpers"; F="$C/Frameworks"
   mkdir -p "$H" "$F"
 
+  msg "Bauwerkzeuge aus Homebrew"
+  brew install --quiet uv tesseract openjpeg poppler jbig2enc dylibbundler
+
   msg "Python und paperless-mrc"
   uv python install --quiet 3.13
   PY_SRC="$(ls -d "$(uv python dir)"/cpython-3.13*-macos-aarch64-none | sort -V | tail -1)"
@@ -73,7 +76,6 @@ if [[ "$MODE" == --standalone ]]; then
   "$PY" -m compileall -q "$R/python/lib" >/dev/null || true  # .pyc vorab (das Paket ist danach schreibgeschützt)
 
   msg "Werkzeuge aus Homebrew übernehmen"
-  brew install --quiet tesseract openjpeg poppler jbig2enc dylibbundler
   BREW="$(brew --prefix)"
   tools=(tesseract opj_compress opj_decompress jbig2 pdftoppm)
   args=()
