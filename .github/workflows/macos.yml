@@ -79,7 +79,7 @@ jobs:
 
       # Nur bei manuellem Start: Bildschirmfotos zusätzlich in den Branch ci-screenshots (per Git abrufbar)
       - name: Bildschirmfotos in Branch ci-screenshots
-        if: github.event_name == 'workflow_dispatch'
+        if: always() && github.event_name == 'workflow_dispatch'
         env:
           TOKEN: ${{ github.token }}
         run: |
