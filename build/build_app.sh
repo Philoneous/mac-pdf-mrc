@@ -60,6 +60,10 @@ msg "App kompilieren ($VERSION, Build $BUILD_NUMBER)"
 xcrun swiftc -swift-version 5 -parse-as-library -O -target "$(uname -m)-apple-macos13.0" \
   ${swift_flags[@]+"${swift_flags[@]}"} -o "$C/MacOS/pdf-mrc" "$SRC_DIR"/App/Sources/*.swift
 cp -R "$SRC_DIR"/App/Resources/*.lproj "$C/Resources/"
+cp "$SRC_DIR/App/Icon/AppIcon.icns" "$C/Resources/AppIcon.icns"  # aus icon.svg: build/make_icon.py
+ICONSET=$(mktemp -d)/AppIcon.iconset
+iconutil -c iconset -o "$ICONSET" "$C/Resources/AppIcon.icns" || die "AppIcon.icns ungültig."
+rm -rf "$(dirname "$ICONSET")"
 plutil -lint -s "$C"/Resources/*.lproj/*.strings || die "Übersetzungsdateien ungültig."
 
 # ---- Laufzeit (nur eigenständige App) -------------------------------------------------------------
@@ -151,6 +155,8 @@ cat > "$C/Info.plist" <<EOF
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleExecutable</key>
 	<string>pdf-mrc</string>
 	<key>CFBundleIdentifier</key>
