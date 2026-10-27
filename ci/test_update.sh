@@ -51,7 +51,9 @@ signature="$(printf '%s' "$SPARKLE_PRIVATE_KEY" | "$SIGN" --ed-key-file - "$W/sr
 echo "- Testupdate" > "$W/notes.md"
 python3 build/appcast.py --version 99.0.0 --build 999999 --url "http://127.0.0.1:$PORT/update.dmg" \
   --signature "$signature" --notes-file "$W/notes.md" --out "$W/srv/appcast.xml"
-(cd "$W/srv" && exec python3 -m http.server "$PORT" --bind 127.0.0.1) >"$W/server.log" 2>&1 &
+# Server mit dem Python der App-Kopie (das System-Python blockiert macOS hier per Netzwerk-Abfrage)
+(cd "$W/srv" && exec "$W/src/PDF MRC.app/Contents/Resources/python/bin/python3" -m http.server "$PORT" --bind 127.0.0.1) \
+  >"$W/server.log" 2>&1 &
 server=$!
 trap 'kill $server 2>/dev/null || true' EXIT
 
@@ -60,6 +62,7 @@ defaults write "$ID" SUEnableAutomaticChecks -bool true
 defaults write "$ID" SUAutomaticallyUpdate -bool true
 defaults write "$ID" SULastCheckTime -date "2020-01-01 00:00:00 +0000"
 defaults write "$ID" tab umwandeln  # nicht im Paperless-Reiter starten (Schlüsselbund-Abfrage nach Neusignieren)
+curl -fsS -o /dev/null "http://127.0.0.1:$PORT/appcast.xml" || { echo "Testserver nicht erreichbar"; cat "$W/server.log"; exit 1; }
 open "$APP"
 
 for _ in $(seq 1 60); do grep -q "GET /update.dmg" "$W/server.log" && break; sleep 2; done

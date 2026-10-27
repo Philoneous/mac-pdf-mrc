@@ -43,7 +43,7 @@ enum Converter {
             return Runtime(executable: python, arguments: ["-m", "paperless_mrc.main"],
                            path: [python.deletingLastPathComponent().path, contents.appendingPathComponent("Helpers").path,
                                   "/usr/bin", "/bin", "/usr/sbin", "/sbin"],
-                           environment: ["TESSDATA_PREFIX": resources.appendingPathComponent("tessdata").path,
+                           environment: ["TESSDATA_PREFIX": Languages.directory.path,
                                          "FONTCONFIG_FILE": resources.appendingPathComponent("fonts/fonts.conf").path,
                                          // das App-Paket bleibt unverändert (Signatur), keine fremden Pakete
                                          "PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1",
@@ -76,6 +76,11 @@ enum Converter {
     static func compressCopy(_ src: URL, with profile: Profile) throws -> CompressedCopy {
         let fm = FileManager.default
         guard let runtime else { throw ConversionError.toolMissing(homebrewTool.path) }
+        if Languages.isManaged {
+            try Languages.prepare()
+            let missing = Languages.missing(profile.languages)
+            guard missing.isEmpty else { throw LanguageError.missing(missing) }
+        }
 
         // Arbeitskopie auf demselben Laufwerk, unter dem Originalnamen (für die Meldungen)
         let workDir = try fm.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: src,

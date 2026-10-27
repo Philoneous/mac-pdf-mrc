@@ -116,7 +116,6 @@
 "Wird umgewandelt …" = "Converting …";
 "Wörter mit mindestens 3 Zeichen und hoher Erkennungssicherheit. Standard: 10." = "Words with at least 3 characters and high recognition confidence. Default: 10.";
 "Zugriff verweigert (HTTP %lld) – API-Token prüfen." = "Access denied (HTTP %lld) – check the API token.";
-"deu+eng+pol" = "deu+eng+pol";
 "digital signiert – unverändert, damit die Signatur gültig bleibt" = "digitally signed – unchanged so the signature stays valid";
 "enthält nicht gescannte Seiten – unverändert" = "contains non-scanned pages – unchanged";
 "https://paperless.example.de" = "https://paperless.example.com";
@@ -139,3 +138,11 @@
 "Updates automatisch installieren" = "Automatically install updates";
 "Version" = "Version";
 "paperless-mrc" = "paperless-mrc";
+"Installiert: %@" = "Installed: %@";
+"Laden" = "Download";
+"Nicht installiert: %@" = "Not installed: %@";
+"Sprache „%@“ installiert" = "Language “%@” installed";
+"Sprache „%@“ nicht gefunden (HTTP %lld)." = "Language “%@” not found (HTTP %lld).";
+"Sprache(n) nicht installiert: %@ – in der App unter „Texterkennung“ laden." = "Language(s) not installed: %@ – download them in the app under “Text recognition”.";
+"Ungültiges Sprachkürzel „%@“ (z. B. fra, pol, chi_sim)." = "Invalid language code “%@” (e.g. fra, pol, chi_sim).";
+"deu+eng" = "deu+eng";

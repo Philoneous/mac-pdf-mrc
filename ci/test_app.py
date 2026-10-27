@@ -58,7 +58,7 @@ def write_scan(path: Path, images) -> Path:
 
 
 def profile(**changes) -> dict:
-    p = {"languages": "deu+eng+pol", "rotate": True, "deskew": True, "removeBlank": True,
+    p = {"languages": "deu+eng", "rotate": True, "deskew": True, "removeBlank": True,
          "blankInkPercent": 0.005, "bgDownsample": 2, "bgRate": 200.0, "fitA4": True,
          "output": "copy", "suffix": " (komprimiert)"}
     p.update(changes)
@@ -142,6 +142,20 @@ def main() -> None:
     run_app(mixed, quick=profile())  # alte Einstellungsdatei ohne neue Schlüssel: Standard = bearbeiten
     assert (tmp / "gemischt (komprimiert).pdf").exists()
     print("ok: neue Einstellungen")
+
+    # Eigenständige App: fehlende OCR-Sprache wird gemeldet, lässt sich nachladen und funktioniert danach
+    if (APP / "Contents/Resources/tessdata").is_dir():
+        french = write_scan(tmp / "francais.pdf", [scan_image(rng)])
+        out = run_app(french, quick=profile(languages="deu+eng+fra"))
+        assert "Language(s) not installed: fra" in out, out
+        assert not (tmp / "francais (komprimiert).pdf").exists()
+        res = subprocess.run([str(BIN), "--sprachen-laden", "fra"], capture_output=True, text=True, timeout=300)
+        print(res.stdout, res.stderr)
+        assert res.returncode == 0 and "installed" in res.stdout, res
+        assert (HOME / "Library/Application Support/mac-pdf-mrc/tessdata/fra.traineddata").stat().st_size > 100_000
+        out = run_app(french, quick=profile(languages="deu+eng+fra"))
+        assert (tmp / "francais (komprimiert).pdf").exists(), out
+        print("ok: Sprache nachgeladen")
 
     # Deutsche Oberfläche: Sprache nur für diese App auf Deutsch stellen
     subprocess.run(["defaults", "write", "io.github.philoneous.mac-pdf-mrc", "AppleLanguages", "-array", "de"], check=True)

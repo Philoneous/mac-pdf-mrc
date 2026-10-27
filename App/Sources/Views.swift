@@ -292,6 +292,56 @@ struct PaperlessView: View {
     }
 }
 
+// MARK: - Sprachen der Texterkennung
+
+struct LanguageStatus: View {
+    let spec: String
+    @State private var loading = false
+    @State private var failure: String?
+    @State private var generation = 0  // nach dem Laden neu auswerten
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            let missing = Languages.missing(spec)
+            if !missing.isEmpty {
+                HStack {
+                    Text(L("Nicht installiert: %@", missing.joined(separator: ", "))).foregroundStyle(.orange)
+                    Spacer()
+                    if loading {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Button("Laden") { load(missing) }
+                    }
+                }
+            }
+            if let failure {
+                Text(failure).foregroundStyle(.red)
+            }
+            Text(L("Installiert: %@", Languages.installed.joined(separator: ", ")))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .id(generation)
+    }
+
+    private func load(_ codes: [String]) {
+        loading = true
+        failure = nil
+        Task {
+            for code in codes {
+                do {
+                    try await Languages.download(code)
+                } catch {
+                    failure = error.localizedDescription
+                    break
+                }
+            }
+            loading = false
+            generation += 1
+        }
+    }
+}
+
 // MARK: - Einstellungen eines Profils
 
 struct ProfileForm: View {
@@ -327,8 +377,11 @@ struct ProfileForm: View {
             Section("Texterkennung") {
                 Toggle("Vorhandene Textebene übernehmen", isOn: $profile.keepTextLayer)
                     .help("Aus: Text immer neu mit Tesseract erkennen (dann wird auch gedreht und begradigt).")
-                TextField("Sprachen", text: $profile.languages, prompt: Text("deu+eng+pol"))
+                TextField("Sprachen", text: $profile.languages, prompt: Text("deu+eng"))
                     .help("Tesseract-Sprachkürzel, mit + verbunden")
+                if Languages.isManaged {
+                    LanguageStatus(spec: profile.languages)
+                }
                 Toggle("Seiten automatisch drehen", isOn: $profile.rotate)
                 TextField("Mindestsicherheit Drehung", value: $profile.rotateThreshold,
                           format: .number.precision(.fractionLength(0...1)))

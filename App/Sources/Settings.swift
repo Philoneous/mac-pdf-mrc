@@ -9,7 +9,7 @@ enum OutputMode: String, Codable {
 /// Ein Satz Einstellungen. Standardwerte = Standardwerte von paperless-mrc.
 struct Profile: Codable, Equatable {
     // Texterkennung
-    var languages = "deu+eng+pol"
+    var languages = "deu+eng"  // mitgeliefert; weitere in der App nachladbar
     var keepTextLayer = true
     var rotate = true
     var rotateThreshold = 12.0

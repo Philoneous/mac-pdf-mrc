@@ -7,6 +7,7 @@ import Foundation
 ///   --paperless-komprimiert <PDFs…> komprimieren (Kontextmenü-Profil) und an Paperless senden
 ///   --paperless-token               API-Token von der Standardeingabe in den Schlüsselbund (für Skripte)
 ///   --schnellaktionen-einrichten    Schnellaktionen einrichten/aktualisieren (wie beim Start der App)
+///   --sprachen-laden <Kürzel…>      Tesseract-Sprachen nachladen (eigenständige App), z. B. fra pol
 /// Ohne diese Argumente startet die App.
 @main
 enum Main {
@@ -19,6 +20,16 @@ enum Main {
         case "--paperless": PaperlessRun.run(files, compress: false)
         case "--paperless-komprimiert": PaperlessRun.run(files, compress: true)
         case "--schnellaktionen-einrichten": QuickAction.setUp()
+        case "--sprachen-laden":
+            for code in files {
+                do {
+                    try PaperlessRun.blocking { try await Languages.download(code) }
+                    print(L("Sprache „%@“ installiert", code))
+                } catch {
+                    FileHandle.standardError.write(Data((L("Fehler: %@", error.localizedDescription) + "\n").utf8))
+                    exit(1)
+                }
+            }
         case "--paperless-token":
             do {
                 try PaperlessToken.save(readLine(strippingNewline: true) ?? "")
@@ -141,7 +152,7 @@ enum PaperlessRun {
     }
 
     /// Führt eine async-Funktion im Kommandozeilenmodus synchron aus.
-    private static func blocking<T>(_ work: @escaping () async throws -> T) throws -> T {
+    static func blocking<T>(_ work: @escaping () async throws -> T) throws -> T {
         let box = Box<T>()
         let done = DispatchSemaphore(value: 0)
         Task.detached {
