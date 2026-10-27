@@ -70,6 +70,8 @@ enum PaperlessRun {
         let client: PaperlessClient
         do {
             client = try PaperlessClient.configured(settings)
+            // Verbindung und Token vorab prüfen: klare Meldung statt abgebrochenem Upload, keine Daten umsonst
+            try blocking { try await client.check() }
         } catch {
             paths.forEach { ContextMenuRun.report(URL(fileURLWithPath: $0), "Fehler: \(error.localizedDescription)") }
             return
