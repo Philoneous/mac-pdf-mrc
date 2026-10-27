@@ -434,7 +434,8 @@ if [[ "$MODE" == --standalone ]]; then
   bad=""
   while IFS= read -r -d '' f; do
     file -b "$f" | grep -q Mach-O || continue
-    refs="$(otool -L "$f" | tail -n +2 | grep -E '/opt/homebrew|/usr/local|/Users/' || true)"
+    own_id="$(otool -D "$f" | tail -n +2)"  # eigene ID einer Bibliothek ist kein Verweis
+    refs="$(otool -L "$f" | tail -n +2 | grep -vF "${own_id:-@@keine@@} (" | grep -E '/opt/homebrew|/usr/local|/Users/' || true)"
     [[ -z "$refs" ]] || bad+="$f: $refs"$'\n'
   done < <(find "$C" -type f -print0)
   [[ -z "$bad" ]] || die "Externe Bibliotheken: $bad"
