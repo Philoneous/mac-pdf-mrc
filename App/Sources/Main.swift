@@ -152,7 +152,9 @@ enum PaperlessRun {
     }
 
     /// Führt eine async-Funktion im Kommandozeilenmodus synchron aus.
-    static func blocking<T>(_ work: @escaping () async throws -> T) throws -> T {
+    /// `@Sendable`: sonst übernimmt ein Closure aus einem @MainActor-Kontext (Main.main) dessen Isolation, würde auf
+    /// dem hier blockierten Main-Thread laufen wollen – Deadlock.
+    static func blocking<T>(_ work: @escaping @Sendable () async throws -> T) throws -> T {
         let box = Box<T>()
         let done = DispatchSemaphore(value: 0)
         Task.detached {

@@ -146,3 +146,4 @@
 "Sprache(n) nicht installiert: %@ – in der App unter „Texterkennung“ laden." = "Language(s) not installed: %@ – download them in the app under “Text recognition”.";
 "Ungültiges Sprachkürzel „%@“ (z. B. fra, pol, chi_sim)." = "Invalid language code “%@” (e.g. fra, pol, chi_sim).";
 "deu+eng" = "deu+eng";
+" (komprimiert)" = " (compressed)";

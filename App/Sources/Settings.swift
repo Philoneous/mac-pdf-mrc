@@ -40,7 +40,7 @@ struct Profile: Codable, Equatable {
     var jobs = 0  // gleichzeitig verarbeitete Seiten; 0 = automatisch (Anzahl Kerne)
     // Ausgabe
     var output = OutputMode.copy
-    var suffix = " (komprimiert)"
+    var suffix = L(" (komprimiert)")  // englisch „ (compressed)“
 
     init() {}
 
