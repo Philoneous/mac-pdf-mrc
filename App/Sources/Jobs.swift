@@ -288,6 +288,7 @@ final class JobCenter: ObservableObject {
             let entry = await JobRunner.run(kind, file: file, settings: settings) { stage in
                 Task { @MainActor in JobCenter.shared.update(id, stage) }
             }
+            NSLog("PDFMRC job done: %@", entry.status.rawValue)
             History.append(entry)
             await Notifier.post(entry)
             await MainActor.run { JobCenter.shared.finish(id, entry) }
@@ -300,6 +301,7 @@ final class JobCenter: ObservableObject {
     }
 
     private func finish(_ id: UUID, _ entry: HistoryEntry) {
+        NSLog("PDFMRC finish; remaining %ld", jobs.count - 1)
         jobs.removeAll { $0.id == id }
         finished.insert(entry, at: 0)
         finished = Array(finished.prefix(5))

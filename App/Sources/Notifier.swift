@@ -24,6 +24,7 @@ enum Notifier {
     static func post(_ entry: HistoryEntry) async {
         let center = UNUserNotificationCenter.current()
         guard await authorized(center) else {
+            NSLog("PDFMRC notify: not authorized – fallback")
             legacy(title: entry.fileName, text: entry.message)
             return
         }
@@ -33,31 +34,40 @@ enum Notifier {
         content.body = entry.message
         content.categoryIdentifier = category
         content.userInfo = ["output": entry.output ?? entry.source, "paperless": entry.paperlessLink?.absoluteString ?? ""]
-        do {
-            try await center.add(UNNotificationRequest(identifier: entry.id.uuidString, content: content, trigger: nil))
-        } catch {
-            legacy(title: entry.fileName, text: entry.message)
-        }
+        let request = UNNotificationRequest(identifier: entry.id.uuidString, content: content, trigger: nil)
+        let added = await withTimeout(5, fallback: false) { done in center.add(request) { done($0 == nil) } }
+        NSLog("PDFMRC notify: native %@", added ? "ok" : "failed – fallback")
+        if !added { legacy(title: entry.fileName, text: entry.message) }
     }
 
     /// Erlaubnis vorhanden? Beim ersten Mal fragt macOS; ohne Antwort binnen 10 s (z. B. niemand am Rechner) gilt
-    /// sie für diese Mitteilung als nicht erteilt.
+    /// sie für diese Mitteilung als nicht erteilt. Alle Aufrufe mit Zeitgrenze: ein hängendes Mitteilungssystem darf
+    /// keinen Auftrag aufhalten.
     private static func authorized(_ center: UNUserNotificationCenter) async -> Bool {
-        switch await center.notificationSettings().authorizationStatus {
+        let status = await withTimeout(5, fallback: UNAuthorizationStatus.denied) { done in
+            center.getNotificationSettings { done($0.authorizationStatus) }
+        }
+        switch status {
         case .authorized, .provisional:
             return true
         case .notDetermined:
-            return await withCheckedContinuation { continuation in
-                let once = Once()
-                center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
-                    once.run { continuation.resume(returning: granted) }
-                }
-                DispatchQueue.global().asyncAfter(deadline: .now() + 10) {
-                    once.run { continuation.resume(returning: false) }
-                }
+            return await withTimeout(10, fallback: false) { done in
+                center.requestAuthorization(options: [.alert, .sound]) { granted, _ in done(granted) }
             }
         default:
             return false
+        }
+    }
+
+    /// Wartet auf einen Rückruf, höchstens `seconds` Sekunden (dann `fallback`).
+    private static func withTimeout<T>(_ seconds: Double, fallback: T,
+                                       _ start: (@escaping (T) -> Void) -> Void) async -> T {
+        await withCheckedContinuation { continuation in
+            let once = Once()
+            start { value in once.run { continuation.resume(returning: value) } }
+            DispatchQueue.global().asyncAfter(deadline: .now() + seconds) {
+                once.run { continuation.resume(returning: fallback) }
+            }
         }
     }
 
