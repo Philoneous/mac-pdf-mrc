@@ -43,7 +43,7 @@ struct PDFMRCApp: App {
         }
 
         Settings {
-            SettingsView()
+            InfoView().frame(width: 520, height: 560)
         }
     }
 }
@@ -62,6 +62,9 @@ struct ContentView: View {
             PaperlessView()
                 .tabItem { Text("Paperless") }
                 .tag("paperless")
+            InfoView()
+                .tabItem { Text("Info") }
+                .tag("info")
         }
         .padding()
         .frame(minWidth: 560, idealWidth: 580, minHeight: 520, idealHeight: 780)

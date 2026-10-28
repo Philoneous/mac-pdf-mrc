@@ -20,6 +20,14 @@ enum Updates {
         #endif
     }
 
+    static var lastCheck: Date? {
+        #if SPARKLE
+        return controller.updater.lastUpdateCheckDate
+        #else
+        return nil
+        #endif
+    }
+
     static func checkNow() {
         #if SPARKLE
         controller.updater.checkForUpdates()
@@ -27,39 +35,95 @@ enum Updates {
     }
 }
 
-/// Einstellungsfenster (⌘,): Updates und Versionen.
-struct SettingsView: View {
-    @State private var automaticChecks = Updates.automaticChecks
-    @State private var automaticInstall = Updates.automaticInstall
+/// Wie Updates eingespielt werden (Sparkle: automaticallyChecksForUpdates / automaticallyDownloadsUpdates).
+enum UpdateMode: String, CaseIterable, Identifiable {
+    case automatic  // suchen, laden, beim Beenden installieren
+    case ask        // suchen und vor der Installation fragen
+    case manual     // nur über „Jetzt nach Updates suchen“
+    var id: String { rawValue }
 
-    private var version: String {
-        let info = Bundle.main.infoDictionary ?? [:]
-        return "\(info["CFBundleShortVersionString"] as? String ?? "?") (\(info["CFBundleVersion"] as? String ?? "?"))"
+    static var current: UpdateMode {
+        get {
+            guard Updates.automaticChecks else { return .manual }
+            return Updates.automaticInstall ? .automatic : .ask
+        }
+        set {
+            Updates.automaticChecks = newValue != .manual
+            Updates.automaticInstall = newValue == .automatic
+        }
+    }
+}
+
+/// Reiter „Info“ (und Einstellungsfenster ⌘,): Version, Updates, Lizenz.
+struct InfoView: View {
+    @State private var mode = UpdateMode.current
+    static let repository = URL(string: "https://github.com/Philoneous/mac-pdf-mrc")!
+
+    private static func info(_ key: String) -> String {
+        Bundle.main.object(forInfoDictionaryKey: key) as? String ?? "?"
     }
 
     var body: some View {
         Form {
-            if Updates.available {
-                Section("Updates") {
-                    Toggle("Automatisch nach Updates suchen", isOn: $automaticChecks)
-                        .onChange(of: automaticChecks) { on in Updates.automaticChecks = on }
-                    Toggle("Updates automatisch installieren", isOn: $automaticInstall)
-                        .onChange(of: automaticInstall) { on in Updates.automaticInstall = on }
-                        .disabled(!automaticChecks)
-                    Button("Jetzt nach Updates suchen") { Updates.checkNow() }
+            Section {
+                HStack(spacing: 16) {
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable().frame(width: 72, height: 72)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(verbatim: "PDF MRC").font(.title2).bold()
+                        Text(L("Version %@ (Build %@)", Self.info("CFBundleShortVersionString"), Self.info("CFBundleVersion")))
+                        Text(L("mit paperless-mrc %@", Self.info("MRCPaperlessVersion")))
+                            .foregroundStyle(.secondary)
+                    }
                 }
-            } else {
-                Text("Diese Installation wird über den Homebrew-Installer aktualisiert (install.sh erneut ausführen).")
-                    .foregroundStyle(.secondary)
+                .padding(.vertical, 4)
             }
-            Section("Version") {
-                LabeledContent("PDF MRC", value: version)
-                LabeledContent("paperless-mrc",
-                               value: Bundle.main.object(forInfoDictionaryKey: "MRCPaperlessVersion") as? String ?? "?")
+
+            Section("Updates") {
+                if Updates.available {
+                    Picker("Updates", selection: $mode) {
+                        Text("Automatisch installieren").tag(UpdateMode.automatic)
+                        Text("Automatisch suchen, vor Installation fragen").tag(UpdateMode.ask)
+                        Text("Nur manuell").tag(UpdateMode.manual)
+                    }
+                    .pickerStyle(.radioGroup)
+                    .labelsHidden()
+                    .onChange(of: mode) { UpdateMode.current = $0 }
+                    TimelineView(.periodic(from: .now, by: 10)) { _ in
+                        LabeledContent("Zuletzt gesucht", value: Updates.lastCheck.map {
+                            $0.formatted(date: .abbreviated, time: .shortened)
+                        } ?? L("noch nie"))
+                    }
+                    HStack {
+                        Button("Jetzt nach Updates suchen") { Updates.checkNow() }
+                        Spacer()
+                        Link("Versionshinweise", destination: Self.repository.appendingPathComponent("releases"))
+                    }
+                    Text("Die App sucht beim Öffnen und danach alle vier Stunden, solange sie geöffnet ist. Beim Umwandeln über das Kontextmenü wird nicht gesucht. Automatisch geladene Updates werden beim Beenden der App installiert.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                } else {
+                    Text("Diese Installation wird über den Homebrew-Installer aktualisiert (install.sh erneut ausführen).")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section("Lizenz") {
+                Text("PDF MRC ist freie Software unter der GNU Affero General Public License, Version 3 oder später (AGPL-3.0-or-later). Sie wird ohne jede Gewährleistung bereitgestellt.")
+                HStack {
+                    Link("Lizenztext", destination: URL(string: "https://www.gnu.org/licenses/agpl-3.0.html")!)
+                    Link("Quellcode", destination: Self.repository)
+                    Spacer()
+                    if let licenses = Bundle.main.resourceURL?.appendingPathComponent("Licenses"),
+                       FileManager.default.fileExists(atPath: licenses.path) {
+                        Button("Lizenzen der Komponenten …") { NSWorkspace.shared.open(licenses) }
+                    }
+                }
+                Text("Enthält u. a. archive-pdf-tools (Internet Archive), PyMuPDF, Tesseract, OpenJPEG, jbig2enc, Poppler und Sparkle, jeweils unter ihren eigenen Lizenzen.")
+                    .font(.footnote).foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 440)
+        .onAppear { mode = UpdateMode.current }
     }
 }
 

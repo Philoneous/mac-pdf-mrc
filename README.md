@@ -23,9 +23,11 @@ layer kept or recognised with Tesseract, wrong page sizes corrected, result veri
 Requirements: macOS 13 or later, Apple silicon. Everything the app needs (Python, paperless-mrc, Tesseract, OpenJPEG,
 jbig2enc, Poppler) is inside the app – no Homebrew required.
 
-**Updates** are installed automatically (Sparkle): the app checks once a day, downloads new versions in the
-background and installs them when you quit it. *PDF MRC → Settings…* lets you switch this off or check manually.
-Updates are signed (EdDSA) and verified before installation.
+**Updates** are installed automatically (Sparkle): the app checks when it opens and every four hours while it is open,
+downloads new versions in the background and installs them when you quit it. Converting via the context menu does not
+check, so open the app now and then. The *About* tab lets you choose *install automatically*, *ask before installing*
+or *manually only*, and check now (also *PDF MRC → Check for Updates …*). Updates are signed (EdDSA) and verified
+before installation. The *About* tab also shows the version, the licence and the licences of the bundled components.
 
 ## Using the app
 

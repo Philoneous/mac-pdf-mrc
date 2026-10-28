@@ -25,7 +25,7 @@ jobs:
     env:
       MRC_APP: /Applications/PDF MRC.app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Build-Nummer = Anzahl Commits
 
@@ -86,7 +86,7 @@ jobs:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: /bin/bash ci/report.sh Release /bin/bash build/release.sh
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: app
@@ -112,7 +112,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 

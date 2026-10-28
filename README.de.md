@@ -23,9 +23,12 @@ des Internet Archive nutzt. Was dabei genau passiert (nur gescannte Seiten, leer
 Voraussetzungen: macOS 13 oder neuer, Apple-Chip. Alles, was die App braucht (Python, paperless-mrc, Tesseract,
 OpenJPEG, jbig2enc, Poppler), steckt in der App – Homebrew ist nicht nötig.
 
-**Updates** installiert die App automatisch (Sparkle): Sie sucht einmal täglich, lädt neue Versionen im Hintergrund und
-installiert sie beim Beenden. Unter *PDF MRC → Einstellungen …* lässt sich das abschalten oder manuell suchen. Updates
-sind signiert (EdDSA) und werden vor der Installation geprüft.
+**Updates** installiert die App automatisch (Sparkle): Sie sucht beim Öffnen und danach alle vier Stunden, solange sie
+geöffnet ist, lädt neue Versionen im Hintergrund und installiert sie beim Beenden. Beim Umwandeln über das Kontextmenü
+wird nicht gesucht – die App also ab und zu öffnen. Im Reiter *Info* lässt sich *automatisch installieren*, *vor
+Installation fragen* oder *nur manuell* wählen und sofort suchen (auch *PDF MRC → Nach Updates suchen …*). Updates sind
+signiert (EdDSA) und werden vor der Installation geprüft. Der Reiter *Info* zeigt außerdem Version, Lizenz und die
+Lizenzen der mitgelieferten Komponenten.
 
 ## Die App
 

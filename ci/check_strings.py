@@ -30,7 +30,7 @@ def swift_keys() -> set[str]:
         keys.update(re.findall(r'\bL\(' + LITERAL, text))
         # SwiftUI-Initialisierer mit LocalizedStringKey (ohne Interpolation)
         keys.update(re.findall(r'\b(?:Text|Toggle|Button|Section|Picker|TextField|SecureField|LabeledContent|'
-                               r'Stepper)\(' + LITERAL, text))
+                               r'Stepper|Link)\(' + LITERAL, text))
         keys.update(re.findall(r'\.help\(' + LITERAL, text))
         # Namen der Schnellaktionen (QuickAction(name: …), Menütitel per L(name))
         keys.update(re.findall(r'QuickAction\(name: ' + LITERAL, text))

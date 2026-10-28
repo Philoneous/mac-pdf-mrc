@@ -104,7 +104,7 @@ if [[ "$MODE" == --standalone ]]; then
   msg "Werkzeuge aus Homebrew übernehmen"
   BREW="$(brew --prefix)"
   # Programme und ihre Bibliotheken (Zeitgrenze: bricht ab statt zu hängen)
-  perl -e 'alarm shift; exec @ARGV' 900 python3 "$SRC_DIR/build/bundle_dylibs.py" "$H" "$F" \
+  perl -e 'alarm shift; exec @ARGV' 900 python3 "$SRC_DIR/build/bundle_dylibs.py" --licenses "$R/Licenses" "$H" "$F" \
     "$BREW"/bin/{tesseract,opj_compress,opj_decompress,jbig2,pdftoppm} || die "Bibliotheken übernehmen fehlgeschlagen."
 
   msg "Tesseract-Sprachdaten"
@@ -115,6 +115,26 @@ if [[ "$MODE" == --standalone ]]; then
   for lang in $TESS_LANGS; do
     curl -fsSL -o "$R/tessdata/$lang.traineddata" "https://github.com/tesseract-ocr/tessdata_fast/raw/main/$lang.traineddata"
   done
+
+  # Lizenzen, die nicht aus Homebrew-Paketen kommen (Python-Pakete: jeweils in ihrem *.dist-info-Ordner)
+  if compgen -G "$SPARKLE_DIR/LICENSE*" >/dev/null; then
+    mkdir -p "$R/Licenses/sparkle" && cp "$SPARKLE_DIR"/LICENSE* "$R/Licenses/sparkle/"
+  else
+    echo "::warning title=Lizenzen::Sparkle-Lizenzdatei nicht im Archiv gefunden"
+  fi
+  mkdir -p "$R/Licenses/tessdata_fast"
+  curl -fsSL -o "$R/Licenses/tessdata_fast/LICENSE" "https://github.com/tesseract-ocr/tessdata_fast/raw/main/LICENSE"
+  mkdir -p "$R/Licenses/python" && cp "$R/python/lib/python3"*/LICENSE.txt "$R/Licenses/python/" 2>/dev/null \
+    || echo "::warning title=Lizenzen::Python-Lizenz nicht gefunden"
+  cat > "$R/Licenses/README.txt" <<'LIC'
+PDF MRC – AGPL-3.0-or-later – https://github.com/Philoneous/mac-pdf-mrc
+
+Mitgelieferte Komponenten / bundled components: one folder per package with its licence files.
+Python packages (paperless-mrc, archive-pdf-tools, PyMuPDF, pikepdf, …) carry their licences in
+Contents/Resources/python/lib/python3.*/site-packages/*.dist-info/.
+Source code: the GitHub repository above; third-party sources from their upstream projects
+(Homebrew formulae: https://formulae.brew.sh).
+LIC
 
   # Fontconfig (von Poppler genutzt): Systemschriften, Cache im Benutzerordner
   mkdir -p "$R/fonts"
@@ -141,6 +161,8 @@ if [[ "$MODE" == --standalone ]]; then
 	<true/>
 	<key>SUAutomaticallyUpdate</key>
 	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>14400</integer>
 "
 fi
 if [[ "$MODE" == --homebrew ]]; then

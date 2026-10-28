@@ -2,7 +2,10 @@
 """Kopiert Programme nach Contents/Helpers und alle ihre nicht-systemeigenen Bibliotheken nach Contents/Frameworks und
 biegt die Verweise auf @rpath um, damit die App ohne Homebrew läuft.
 
-    python3 build/bundle_dylibs.py <Contents/Helpers> <Contents/Frameworks> <Programm> …
+    python3 build/bundle_dylibs.py [--licenses <Ordner>] <Contents/Helpers> <Contents/Frameworks> <Programm> …
+
+Mit --licenses werden die Lizenzdateien (LICENSE*, COPYING*, NOTICE*) aller Homebrew-Pakete, aus denen Dateien
+stammen, nach <Ordner>/<Paket>/ kopiert – GPL, Apache und BSD verlangen, dass sie mit den Programmen weitergegeben werden.
 
 Löst @rpath, @loader_path und @executable_path anhand der Originaldateien auf. Bricht mit einer Meldung ab, wenn eine
 Bibliothek nicht gefunden wird (statt wie dylibbundler interaktiv nachzufragen).
@@ -58,7 +61,37 @@ def resolve(dep: str, original: Path, executable: Path) -> Path:
     return candidate.resolve()
 
 
+LICENSE_PREFIXES = ("LICENSE", "LICENCE", "COPYING", "NOTICE")
+
+
+def copy_licenses(sources: list[Path], target: Path) -> None:
+    """Lizenzdateien der Homebrew-Pakete (Keg: <Cellar>/<Paket>/<Version>/) einsammeln."""
+    kegs = {}
+    for source in sources:
+        parts = source.parts
+        if "Cellar" in parts and len(parts) > parts.index("Cellar") + 2:
+            i = parts.index("Cellar")
+            kegs[parts[i + 1]] = Path(*parts[: i + 3])
+    missing = []
+    for name, keg in sorted(kegs.items()):
+        files = [f for f in keg.iterdir() if f.is_file() and f.name.upper().startswith(LICENSE_PREFIXES)]
+        if not files:
+            missing.append(name)
+            continue
+        (target / name).mkdir(parents=True, exist_ok=True)
+        for f in files:
+            shutil.copy2(f, target / name / f.name)
+    print(f"[OK] Lizenzen von {len(kegs) - len(missing)} Paketen nach {target}")
+    if missing:
+        print(f"::warning title=Lizenzen::Keine Lizenzdatei im Paket: {', '.join(missing)}")
+
+
 def main() -> None:
+    args = sys.argv[1:]
+    licenses = None
+    if args[:1] == ["--licenses"]:
+        licenses, args = Path(args[1]), args[2:]
+    sys.argv[1:] = args
     helpers, frameworks = Path(sys.argv[1]), Path(sys.argv[2])
     helpers.mkdir(parents=True, exist_ok=True)
     frameworks.mkdir(parents=True, exist_ok=True)
@@ -93,6 +126,8 @@ def main() -> None:
         run("install_name_tool", "-add_rpath", own_rpath, str(bundled))
         print(f"  {bundled.name}")
     print(f"[OK] {len(originals)} Bibliotheken nach {frameworks}")
+    if licenses:
+        copy_licenses([Path(p).resolve() for p in sys.argv[3:]] + list(originals.values()), licenses)
 
 
 if __name__ == "__main__":
