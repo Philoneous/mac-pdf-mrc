@@ -180,6 +180,21 @@ def main() -> None:
         assert (tmp / "francais (komprimiert).pdf").exists(), out
         print("ok: Sprache nachgeladen")
 
+    # Scan mit vorhandener Textebene (Scanner-OCR): nutzt pdf-to-hocr aus dem App-Paket (Startskript mit
+    # richtigem Python, nicht dem Build-Ordner)
+    layered = write_scan(tmp / "mit textebene.pdf", [scan_image(rng)])
+    doc = pymupdf.open(layered)
+    y = 120
+    for line in LETTER * 3:
+        doc[0].insert_text((72, y), line, fontsize=11, render_mode=3)  # unsichtbar wie Scanner-OCR
+        y += 18
+    doc.saveIncr()
+    doc.close()
+    out = run_app(layered, quick=profile())
+    assert "text layer kept" in out, out
+    assert (tmp / "mit textebene (komprimiert).pdf").exists(), out
+    print("ok: vorhandene Textebene")
+
     # Deutsche Oberfläche: Sprache nur für diese App auf Deutsch stellen
     subprocess.run(["defaults", "write", "io.github.philoneous.mac-pdf-mrc", "AppleLanguages", "-array", "de"], check=True)
     try:

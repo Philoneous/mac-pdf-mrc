@@ -94,11 +94,10 @@ if [[ "$MODE" == --standalone ]]; then
   rm -rf "$R"/python/lib/python3.*/{test,idlelib,tkinter,turtledemo,ensurepip} "$R"/python/lib/{tcl,tk,itcl,thread}* \
          "$R"/python/share "$R"/python/include
   # Skripte (recode_pdf, pdf-to-hocr …) mit festem Python-Pfad → über PATH (python/bin steht vorn)
-  for f in "$R"/python/bin/*; do
-    if [[ -f "$f" && ! -L "$f" ]] && head -c 2 "$f" | grep -q '#!' && head -n 1 "$f" | grep -q python; then
-      sed -i '' -e '1s|^#!.*$|#!/usr/bin/env python3|' "$f"
-    fi
-  done
+  python3 "$SRC_DIR/build/fix_scripts.py" "$R/python/bin" || die "Skripte umstellen fehlgeschlagen."
+  if grep -l "$(dirname "$BUILD")" "$R"/python/bin/* 2>/dev/null; then
+    die "Skripte in python/bin verweisen noch auf den Build-Ordner (siehe oben)."
+  fi
   "$PY" -m compileall -q "$R/python/lib" >/dev/null || true  # .pyc vorab (das Paket ist danach schreibgeschützt)
 
   msg "Werkzeuge aus Homebrew übernehmen"
