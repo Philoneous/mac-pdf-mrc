@@ -83,11 +83,11 @@ enum LanguageError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidCode(let code):
-            return L("Ungültiges Sprachkürzel „%@“ (z. B. fra, pol, chi_sim).", code)
+            return L("Invalid language code “%@” (e.g. fra, pol, chi_sim).", code)
         case .notFound(let code, let status):
-            return L("Sprache „%@“ nicht gefunden (HTTP %lld).", code, status)
+            return L("Language “%@” not found (HTTP %lld).", code, status)
         case .missing(let codes):
-            return L("Sprache(n) nicht installiert: %@ – in der App unter „Texterkennung“ laden.",
+            return L("Language(s) not installed: %@ – download them in the app under “Text recognition”.",
                      codes.joined(separator: ", "))
         }
     }

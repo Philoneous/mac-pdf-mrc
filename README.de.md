@@ -36,7 +36,7 @@ Lizenzen der mitgelieferten Komponenten.
 Meldungen von paperless-mrc erscheinen darunter, *Im Finder zeigen* öffnet die neue Datei.
 
 **Kontextmenü:** Schnellaktion *PDF komprimieren (MRC)* im Finder ein- und ausschalten und ihre Einstellungen
-festlegen (unabhängig von der manuellen Umwandlung; *Einstellungen der manuellen Umwandlung übernehmen* kopiert sie
+festlegen (unabhängig von der manuellen Umwandlung; *Einstellungen aus „Manuell umwandeln“ übernehmen* kopiert sie
 herüber). Rechtsklick auf ein oder mehrere PDFs → *Schnellaktionen*. Das Ergebnis jeder Datei erscheint als Mitteilung.
 
 **Paperless:** Adresse des Paperless-ngx-Servers und API-Token (in Paperless unter *Mein Profil*), *Speichern und
@@ -67,6 +67,8 @@ Die Oberfläche folgt der Systemsprache (Deutsch oder Englisch; andere Sprachen 
 
 ### Einstellungen (je Profil, *Standardwerte wiederherstellen* setzt sie zurück)
 
+Jede Einstellung zeigt diese Erklärung als Tooltip, wenn man den Mauszeiger darüber hält.
+
 | Einstellung | Standard | Wirkung |
 |---|---|---|
 | **Seitenauswahl** | | |
@@ -81,7 +83,7 @@ Die Oberfläche folgt der Systemsprache (Deutsch oder Englisch; andere Sprachen 
 | Sprachen | `deu+eng` | Tesseract-Sprachen; weitere nachladbar |
 | Seiten automatisch drehen / Mindestsicherheit | an / 12 | nur Seiten ohne übernommene Textebene |
 | Schräglage begradigen / erst ab / Suchbereich ± | an / 0,2° / 5° | Ergebnis am Rand des Suchbereichs gilt als unklar → keine Korrektur |
-| Mindestdeutlichkeit Schräglage | 1,3 | nur begradigen, wenn sich der beste Winkel deutlich abhebt; verhindert, dass Logos oder Stempel auf textarmen Seiten eine gerade Seite schief drehen |
+| Mindestdeutlichkeit der Schräglage | 1,3 | nur begradigen, wenn sich der beste Winkel deutlich abhebt; verhindert, dass Logos oder Stempel auf textarmen Seiten eine gerade Seite schief drehen |
 | **Leere Seiten** | | |
 | Leere gescannte Seiten entfernen | an | |
 | Leer unter Tintenanteil (%) | 0,005 | eine Seite mit nur einer Seitenzahl liegt bei ca. 0,05 % |
@@ -91,11 +93,11 @@ Die Oberfläche folgt der Systemsprache (Deutsch oder Englisch; andere Sprachen 
 | Kompressionsrate | 200 | höher = kleiner; Farbflächen und hellgraue Schrift leiden |
 | Falsche Seitengrößen auf A4 korrigieren | an | z. B. Handyscans mit 61 × 86 cm |
 | Nachschärfen / Radius | 150 % / 1,5 px | hellgraue, dünne Schrift bleibt scharf; 0 = aus |
-| Textmaske: Faktor | 0,5 | kleiner = auch hellgraue Schrift bleibt scharf; 1 = recode_pdf-Standard |
+| Textmaske, Faktor | 0,5 | kleiner = auch hellgraue Schrift bleibt scharf; 1 = recode_pdf-Standard |
 | Höchstauflösung | aus | höher aufgelöste Scans herunterskalieren (z. B. 300 dpi): schneller und kleiner |
 | Gleichzeitige Seiten | automatisch | Anzahl der Prozessorkerne |
 | **Ausgabe** | | |
-| Ergebnis | Kopie | *Als Kopie neben dem Original* (`<Name> (komprimiert).pdf`, Zusatz änderbar) oder *Original ersetzen* (Original in den Papierkorb) |
+| Ergebnis | Kopie | *Als Kopie neben dem Original speichern* (`<Name> (komprimiert).pdf`, Zusatz änderbar) oder *Original ersetzen* (Original in den Papierkorb) |
 
 Nicht abschaltbar (Sicherheit): digital signierte PDFs bleiben unverändert, und ein Ergebnis entsteht nur, wenn es
 geprüft und kleiner ist. Sonst entsteht keine Datei und das Original bleibt, wie es ist; eine schon vorhandene Kopie
@@ -106,8 +108,9 @@ wird nicht überschrieben. Gespeichert werden die Einstellungen in
 
 - Erscheint eine Schnellaktion nicht: *Systemeinstellungen → Tastatur → Tastaturkurzbefehle → Dienste* prüfen.
 - Beim ersten Zugriff auf Schreibtisch, Dokumente oder Downloads fragt macOS nach der Erlaubnis.
-- **Deinstallieren:** *PDF MRC* aus Programme löschen, die Schnellaktionen in `~/Library/Services` (*PDF komprimieren
-  (MRC)*, *An Paperless senden*, *Komprimieren und an Paperless senden*) und `~/Library/Application Support/mac-pdf-mrc`.
+- **Deinstallieren:** *PDF MRC* aus Programme löschen, die Schnellaktionen in `~/Library/Services` (Dateinamen englisch:
+  *Compress PDF (MRC)*, *Send to Paperless*, *Compress and Send to Paperless*) und
+  `~/Library/Application Support/mac-pdf-mrc`.
 - Intel-Macs werden nicht unterstützt (archive-pdf-tools gibt es nicht als fertiges Intel-Paket).
 
 ### Alternative: Homebrew-Installer (Backup)

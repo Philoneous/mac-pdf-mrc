@@ -26,9 +26,9 @@ SPARKLE_VERSION="${SPARKLE_VERSION:-2.9.6}"  # Updates (nur eigenständige App)
 SPARKLE_DIR="$SRC_DIR/build/.sparkle-$SPARKLE_VERSION"  # Sparkle.framework, bin/sign_update
 SPARKLE_FEED="${SPARKLE_FEED:-https://github.com/Philoneous/mac-pdf-mrc/releases/latest/download/appcast.xml}"
 SPARKLE_PUBLIC_KEY="${SPARKLE_PUBLIC_KEY:-SrykS0Sl6v8dGZlbnI6w4D35cwaghPkH8L0ByMD2RLw=}"
-NAME="PDF komprimieren (MRC)"
-NAME_SEND="An Paperless senden"
-NAME_SEND_MRC="Komprimieren und an Paperless senden"
+NAME="Compress PDF (MRC)"  # Dateinamen der Schnellaktionen; Menütitel übersetzt die App (QuickAction.swift)
+NAME_SEND="Send to Paperless"
+NAME_SEND_MRC="Compress and Send to Paperless"
 
 msg() { printf '[..] %s\n' "$*"; }
 ok()  { printf '[OK] %s\n' "$*"; }
@@ -177,6 +177,11 @@ cat > "$C/Info.plist" <<EOF
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>de</string>
+	</array>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleExecutable</key>

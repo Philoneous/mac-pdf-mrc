@@ -14,9 +14,9 @@ enum ConversionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .emptySuffix:
-            return L("Der Namenszusatz darf nicht leer sein.")
+            return L("The file name suffix must not be empty.")
         case .toolMissing(let path):
-            return L("paperless-mrc nicht gefunden (%@). Bitte die App neu installieren.", path)
+            return L("paperless-mrc not found (%@). Please reinstall the app.", path)
         }
     }
 }
@@ -100,7 +100,7 @@ enum Converter {
                    as? [String: Any] {
                 message = describeResult(result)
             } else {
-                message = lines.last ?? L("Keine Rückmeldung von paperless-mrc")
+                message = lines.last ?? L("No response from paperless-mrc")
                 if message.hasPrefix(src.lastPathComponent + ": ") {
                     message.removeFirst(src.lastPathComponent.count + 2)
                 }
@@ -122,7 +122,7 @@ enum Converter {
             dest = src.deletingLastPathComponent()
                 .appendingPathComponent(src.deletingPathExtension().lastPathComponent + profile.suffix + ".pdf")
             if fm.fileExists(atPath: dest.path) {
-                return Conversion(message: L("%@ existiert bereits – übersprungen", dest.lastPathComponent), log: "",
+                return Conversion(message: L("%@ already exists – skipped", dest.lastPathComponent), log: "",
                                   output: nil)
             }
         }

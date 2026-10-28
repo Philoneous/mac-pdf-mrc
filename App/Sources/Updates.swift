@@ -71,8 +71,8 @@ struct InfoView: View {
                         .resizable().frame(width: 72, height: 72)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(verbatim: "PDF MRC").font(.title2).bold()
-                        Text(L("Version %@ (Build %@)", Self.info("CFBundleShortVersionString"), Self.info("CFBundleVersion")))
-                        Text(L("mit paperless-mrc %@", Self.info("MRCPaperlessVersion")))
+                        Text(L("Version %@ (build %@)", Self.info("CFBundleShortVersionString"), Self.info("CFBundleVersion")))
+                        Text(L("with paperless-mrc %@", Self.info("MRCPaperlessVersion")))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -82,43 +82,46 @@ struct InfoView: View {
             Section("Updates") {
                 if Updates.available {
                     Picker("Updates", selection: $mode) {
-                        Text("Automatisch installieren").tag(UpdateMode.automatic)
-                        Text("Automatisch suchen, vor Installation fragen").tag(UpdateMode.ask)
-                        Text("Nur manuell").tag(UpdateMode.manual)
+                        Text("Install automatically").tag(UpdateMode.automatic)
+                        Text("Check automatically, ask before installing").tag(UpdateMode.ask)
+                        Text("Manually only").tag(UpdateMode.manual)
                     }
                     .pickerStyle(.radioGroup)
                     .labelsHidden()
+                    .help("Install automatically: new versions are downloaded in the background and installed when you quit the app. Ask: the app shows new versions and asks before installing. Manually only: no automatic checks; use “Check for updates now”.")
                     .onChange(of: mode) { UpdateMode.current = $0 }
                     TimelineView(.periodic(from: .now, by: 10)) { _ in
-                        LabeledContent("Zuletzt gesucht", value: Updates.lastCheck.map {
+                        LabeledContent("Last checked", value: Updates.lastCheck.map {
                             $0.formatted(date: .abbreviated, time: .shortened)
-                        } ?? L("noch nie"))
+                        } ?? L("never"))
                     }
                     HStack {
-                        Button("Jetzt nach Updates suchen") { Updates.checkNow() }
+                        Button("Check for updates now") { Updates.checkNow() }
+                            .help("Checks right away whether a new version is available.")
                         Spacer()
-                        Link("Versionshinweise", destination: Self.repository.appendingPathComponent("releases"))
+                        Link("Release notes", destination: Self.repository.appendingPathComponent("releases"))
                     }
-                    Text("Die App sucht beim Öffnen und danach alle vier Stunden, solange sie geöffnet ist. Beim Umwandeln über das Kontextmenü wird nicht gesucht. Automatisch geladene Updates werden beim Beenden der App installiert.")
+                    Text("The app checks when it opens and every four hours while it is open. Quick Actions in the Finder do not check. Automatically downloaded updates are installed when you quit the app.")
                         .font(.footnote).foregroundStyle(.secondary)
                 } else {
-                    Text("Diese Installation wird über den Homebrew-Installer aktualisiert (install.sh erneut ausführen).")
+                    Text("This installation was built with the Homebrew installer and is updated by running install.sh again.")
                         .foregroundStyle(.secondary)
                 }
             }
 
-            Section("Lizenz") {
-                Text("PDF MRC ist freie Software unter der GNU Affero General Public License, Version 3 oder später (AGPL-3.0-or-later). Sie wird ohne jede Gewährleistung bereitgestellt.")
+            Section("License") {
+                Text("PDF MRC is free software under the GNU Affero General Public License, version 3 or later (AGPL-3.0-or-later). It comes without any warranty.")
                 HStack {
-                    Link("Lizenztext", destination: URL(string: "https://www.gnu.org/licenses/agpl-3.0.html")!)
-                    Link("Quellcode", destination: Self.repository)
+                    Link("License text", destination: URL(string: "https://www.gnu.org/licenses/agpl-3.0.html")!)
+                    Link("Source code", destination: Self.repository)
                     Spacer()
                     if let licenses = Bundle.main.resourceURL?.appendingPathComponent("Licenses"),
                        FileManager.default.fileExists(atPath: licenses.path) {
-                        Button("Lizenzen der Komponenten …") { NSWorkspace.shared.open(licenses) }
+                        Button("Component licenses…") { NSWorkspace.shared.open(licenses) }
+                            .help("Opens the folder with the license texts of the bundled components (Tesseract, Poppler, Sparkle and others).")
                     }
                 }
-                Text("Enthält u. a. archive-pdf-tools (Internet Archive), PyMuPDF, Tesseract, OpenJPEG, jbig2enc, Poppler und Sparkle, jeweils unter ihren eigenen Lizenzen.")
+                Text("Includes archive-pdf-tools (Internet Archive), PyMuPDF, Tesseract, OpenJPEG, jbig2enc, Poppler and Sparkle, among others, each under its own license.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
         }

@@ -37,7 +37,7 @@ struct PDFMRCApp: App {
         .commands {
             if Updates.available {
                 CommandGroup(after: .appInfo) {
-                    Button("Nach Updates suchen …") { Updates.checkNow() }
+                    Button("Check for Updates…") { Updates.checkNow() }
                 }
             }
         }
@@ -54,16 +54,16 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $tab) {
             ConvertView()
-                .tabItem { Text("Manuell umwandeln") }
+                .tabItem { Text("Convert manually") }
                 .tag("umwandeln")
             ContextMenuView()
-                .tabItem { Text("Kontextmenü") }
+                .tabItem { Text("Context menu") }
                 .tag("kontextmenue")
             PaperlessView()
-                .tabItem { Text("Paperless") }
+                .tabItem { Text(verbatim: "Paperless") }
                 .tag("paperless")
             InfoView()
-                .tabItem { Text("Info") }
+                .tabItem { Text("About") }
                 .tag("info")
         }
         .padding()
@@ -87,16 +87,17 @@ struct ConvertView: View {
             dropZone
             ProfileForm(profile: $store.settings.manual)
             HStack {
-                Button("Umwandeln", action: convert)
+                Button("Convert", action: convert)
                     .keyboardShortcut(.defaultAction)
                     .disabled(file == nil || running)
+                    .help("Converts the selected PDF with the settings above. The original stays unchanged unless “Replace the original” is selected.")
                 if running {
                     ProgressView().controlSize(.small)
-                    Text("Wird umgewandelt …").foregroundStyle(.secondary)
+                    Text("Converting…").foregroundStyle(.secondary)
                 }
                 Spacer()
                 if let output = result?.output {
-                    Button("Im Finder zeigen") { NSWorkspace.shared.activateFileViewerSelecting([output]) }
+                    Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([output]) }
                 }
             }
             if let failure {
@@ -127,11 +128,11 @@ struct ConvertView: View {
             .frame(height: 86)
             .overlay {
                 VStack(spacing: 8) {
-                    Text(file?.lastPathComponent ?? L("PDF hierher ziehen"))
+                    Text(file?.lastPathComponent ?? L("Drop a PDF here"))
                         .font(.headline)
                         .lineLimit(1)
                         .truncationMode(.middle)
-                    Button("PDF auswählen …") { choosing = true }
+                    Button("Choose PDF…") { choosing = true }
                 }
                 .padding(.horizontal)
             }
@@ -176,7 +177,7 @@ struct ContextMenuView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Toggle("Schnellaktion „PDF komprimieren (MRC)“ im Finder anzeigen", isOn: $enabled)
+            Toggle("Show “Compress PDF (MRC)” in the Finder context menu", isOn: $enabled)
                 .onChange(of: enabled) { on in
                     guard on != QuickAction.compress.isInstalled else { return }
                     do {
@@ -187,16 +188,18 @@ struct ContextMenuView: View {
                         enabled = QuickAction.compress.isInstalled
                     }
                 }
-            Text("Rechtsklick auf eine oder mehrere PDFs → Schnellaktionen. Dabei gelten die Einstellungen unten (auch für „Komprimieren und an Paperless senden“); das Ergebnis erscheint als Mitteilung.")
+                .help("Adds the Quick Action to the Finder context menu: right-click one or more PDFs → Quick Actions → “Compress PDF (MRC)”. It uses the settings in this tab; each result appears as a notification.")
+            Text("Right-click one or more PDFs in the Finder → Quick Actions. The settings below apply (also to “Compress and Send to Paperless”); each result appears as a notification.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if let failure {
                 Text(failure).foregroundStyle(.red)
             }
-            Button("Einstellungen der manuellen Umwandlung übernehmen") {
+            Button("Copy settings from “Convert manually”") {
                 store.settings.quickAction = store.settings.manual
             }
+            .help("Replaces the settings in this tab with those from the “Convert manually” tab.")
             ProfileForm(profile: $store.settings.quickAction)
         }
     }
@@ -218,12 +221,15 @@ struct PaperlessView: View {
     var body: some View {
         Form {
             Section("Server") {
-                TextField("Adresse", text: $store.settings.paperlessURL, prompt: Text("https://paperless.example.de"))
-                SecureField("API-Token", text: $token)
-                    .help("In Paperless unter „Mein Profil“ → API-Auth-Token. Wird im macOS-Schlüsselbund gespeichert.")
+                TextField("Server address", text: $store.settings.paperlessURL,
+                          prompt: Text(verbatim: "https://paperless.example.com"))
+                    .help("Address of your Paperless-ngx server, e.g. https://paperless.example.com. When away from home, use HTTPS (e.g. a reverse proxy with a certificate) or a VPN. Self-signed certificates are not supported.")
+                SecureField("API token", text: $token)
+                    .help("In Paperless under “My Profile” → “API Auth Token”. Stored in the macOS keychain. After an app update, macOS asks once whether the app may still access it.")
                 HStack {
-                    Button("Speichern und Verbindung testen", action: saveAndCheck)
+                    Button("Save and test connection", action: saveAndCheck)
                         .disabled(checking)
+                        .help("Saves the address and token and checks that Paperless can be reached and accepts the token.")
                     if checking {
                         ProgressView().controlSize(.small)
                     }
@@ -232,17 +238,19 @@ struct PaperlessView: View {
                     Text(status).foregroundStyle(statusOK ? Color.green : Color.red)
                 }
                 if store.settings.paperlessURL.lowercased().hasPrefix("http://") {
-                    Text("Unverschlüsselt (http): Von unterwegs nur über HTTPS (z. B. Reverse-Proxy) oder ein VPN verbinden – sonst gehen Token und Dokumente im Klartext durchs Netz.")
+                    Text("Unencrypted (http): when away from home, connect only via HTTPS (e.g. a reverse proxy) or a VPN – otherwise the token and documents travel over the network in plain text.")
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
             }
-            Section("Finder-Kontextmenü") {
-                Toggle("„An Paperless senden“ (Original)", isOn: $sendEnabled)
+            Section("Finder context menu") {
+                Toggle("“Send to Paperless” (original)", isOn: $sendEnabled)
                     .onChange(of: sendEnabled) { on in sendEnabled = apply(.send, on) }
-                Toggle("„Komprimieren und an Paperless senden“", isOn: $compressAndSendEnabled)
+                    .help("Quick Action that sends the PDF unchanged. Paperless compresses it on the server (if paperless-mrc is installed there).")
+                Toggle("“Compress and Send to Paperless”", isOn: $compressAndSendEnabled)
                     .onChange(of: compressAndSendEnabled) { on in compressAndSendEnabled = apply(.compressAndSend, on) }
-                Text("Die Datei auf dem Mac bleibt unverändert. Beim Komprimieren gelten die Einstellungen im Reiter „Kontextmenü“; Paperless komprimiert eine so gesendete Datei nicht noch einmal. Das Ergebnis (angelegtes Dokument, Duplikat oder Fehler) erscheint als Mitteilung.")
+                    .help("Quick Action that compresses on the Mac first (settings from the “Context menu” tab) and sends the result – or the original if it cannot be made smaller. Useful with a slow server or a slow upload.")
+                Text("The file on your Mac always stays unchanged. Compression uses the settings in the “Context menu” tab; Paperless does not compress a file sent this way a second time. The result (added document, duplicate or error) appears as a notification.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -284,7 +292,7 @@ struct PaperlessView: View {
             do {
                 try PaperlessToken.save(token)
                 try await PaperlessClient(address: address, token: token).check()
-                status = L("Verbindung in Ordnung")
+                status = L("Connection OK")
                 statusOK = true
             } catch {
                 status = error.localizedDescription
@@ -308,19 +316,20 @@ struct LanguageStatus: View {
             let missing = Languages.missing(spec)
             if !missing.isEmpty {
                 HStack {
-                    Text(L("Nicht installiert: %@", missing.joined(separator: ", "))).foregroundStyle(.orange)
+                    Text(L("Not installed: %@", missing.joined(separator: ", "))).foregroundStyle(.orange)
                     Spacer()
                     if loading {
                         ProgressView().controlSize(.small)
                     } else {
-                        Button("Laden") { load(missing) }
+                        Button("Download") { load(missing) }
+                            .help("Downloads the missing languages from tessdata_fast (github.com/tesseract-ocr) to ~/Library/Application Support/mac-pdf-mrc/tessdata.")
                     }
                 }
             }
             if let failure {
                 Text(failure).foregroundStyle(.red)
             }
-            Text(L("Installiert: %@", Languages.installed.joined(separator: ", ")))
+            Text(L("Installed: %@", Languages.installed.joined(separator: ", ")))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -345,124 +354,133 @@ struct LanguageStatus: View {
     }
 }
 
-// MARK: - Einstellungen eines Profils
+// MARK: - Einstellungen eines Profils (Tooltips = Erklärungen aus dem README)
 
 struct ProfileForm: View {
     @Binding var profile: Profile
 
     var body: some View {
         Form {
-            Section("Seitenauswahl") {
-                Toggle("Auch PDFs mit digitalen Seiten bearbeiten", isOn: $profile.mixedPdfs)
-                    .help("Digitale Seiten bleiben dabei unverändert. Aus: nur PDFs, die ausschließlich aus Scans bestehen.")
-                Toggle("Fotoseiten unverändert lassen", isOn: $profile.skipPhotos)
-                    .help("MRC verschlechtert Fotos sichtbar. Seiten mit wenig Papierfläche (Fotos, aber auch farbig hinterlegter Text) gelten nur mit genug erkanntem Text als Dokument.")
-                TextField("Texterkennung prüft unter Papierfläche (%)", value: $profile.photoPaperPercent,
+            Section("Page selection") {
+                Toggle("Also process PDFs with digital pages", isOn: $profile.mixedPdfs)
+                    .help("Also compresses the scanned pages of PDFs that contain digital pages as well (e.g. a scan with a generated cover page); digital pages stay unchanged. Off: only PDFs that consist entirely of scans are processed. Default: on.")
+                Toggle("Leave photo pages unchanged", isOn: $profile.skipPhotos)
+                    .help("MRC visibly degrades photos, so pages recognized as photos stay unchanged. Default: on.")
+                TextField("Text check below paper area (%)", value: $profile.photoPaperPercent,
                           format: .number.precision(.fractionLength(0...1)))
                     .disabled(!profile.skipPhotos)
-                    .help("Gemessen: Dokumente auf weißem Papier 61–98 %, Fotos 11–43 %. Standard: 50.")
-                TextField("Foto unter sicher erkannten Wörtern", value: $profile.photoMinWords, format: .number)
+                    .help("Pages with less paper area than this (photos, but also text on colored backgrounds) only count as documents if enough text is recognized. Measured: documents on white paper 61–98 %, photos 11–43 %. Default: 50.")
+                TextField("Photo below confident words", value: $profile.photoMinWords, format: .number)
                     .disabled(!profile.skipPhotos)
-                    .help("Wörter mit mindestens 3 Zeichen und hoher Erkennungssicherheit. Standard: 10.")
-                Toggle("Vektorisierte Scans rastern und durchsuchbar machen", isOn: $profile.vectorPages)
-                    .help("Manche Scanprogramme speichern Seiten als Tausende Vektorelemente ohne Text.")
-                TextField("Vektorisiert ab Elementen", value: $profile.vectorMinItems, format: .number)
+                    .help("A page checked by text recognition counts as a photo if fewer words than this are recognized with high confidence (words with at least 3 characters). Default: 10.")
+                Toggle("Rasterize vectorized scans and make them searchable", isOn: $profile.vectorPages)
+                    .help("Some scanner software stores pages as thousands of vector elements instead of an image. Such pages (no image, no text) are rasterized, compressed and made searchable. Default: on.")
+                TextField("Vectorized from elements", value: $profile.vectorMinItems, format: .number)
                     .disabled(!profile.vectorPages)
-                    .help("Seite ohne Bild und Text mit mindestens so vielen Linien/Kurven. Standard: 1000.")
-                Picker("Rasterauflösung", selection: $profile.vectorDpi) {
-                    Text("200 dpi").tag(200)
-                    Text("300 dpi (Standard)").tag(300)
-                    Text("400 dpi").tag(400)
-                    Text("600 dpi").tag(600)
+                    .help("A page without image and text counts as a vectorized scan from this many lines and curves. Default: 1000.")
+                Picker("Raster resolution", selection: $profile.vectorDpi) {
+                    Text(verbatim: "200 dpi").tag(200)
+                    Text("300 dpi (default)").tag(300)
+                    Text(verbatim: "400 dpi").tag(400)
+                    Text(verbatim: "600 dpi").tag(600)
                 }
                 .disabled(!profile.vectorPages)
+                .help("Resolution at which vectorized scans are rasterized. Default: 300 dpi.")
             }
-            Section("Texterkennung") {
-                Toggle("Vorhandene Textebene übernehmen", isOn: $profile.keepTextLayer)
-                    .help("Aus: Text immer neu mit Tesseract erkennen (dann wird auch gedreht und begradigt).")
-                TextField("Sprachen", text: $profile.languages, prompt: Text("deu+eng"))
-                    .help("Tesseract-Sprachkürzel, mit + verbunden")
+            Section("Text recognition") {
+                Toggle("Keep existing text layer", isOn: $profile.keepTextLayer)
+                    .help("Keeps an existing text layer (e.g. from the scanner) instead of recognizing the text again. Off: always recognize with Tesseract – pages are then also rotated and deskewed. Default: on.")
+                TextField("Languages", text: $profile.languages, prompt: Text(verbatim: "deu+eng"))
+                    .help("Tesseract language codes joined with +, e.g. deu+eng+fra. German and English are included; missing languages can be downloaded here. Default: deu+eng.")
                 if Languages.isManaged {
                     LanguageStatus(spec: profile.languages)
                 }
-                Toggle("Seiten automatisch drehen", isOn: $profile.rotate)
-                TextField("Mindestsicherheit Drehung", value: $profile.rotateThreshold,
+                Toggle("Rotate pages automatically", isOn: $profile.rotate)
+                    .help("Turns pages that are upside down or sideways the right way up. Only pages without a kept text layer. Default: on.")
+                TextField("Minimum rotation confidence", value: $profile.rotateThreshold,
                           format: .number.precision(.fractionLength(0...1)))
                     .disabled(!profile.rotate)
-                    .help("Tesseract-Konfidenz, ab der gedreht wird. Standard: 12.")
-                Toggle("Schräglage begradigen", isOn: $profile.deskew)
-                TextField("Erst ab Schräglage (Grad)", value: $profile.deskewMinAngle,
+                    .help("Confidence of Tesseract’s orientation detection required before a page is rotated. Higher = rotates less often. Default: 12.")
+                Toggle("Deskew", isOn: $profile.deskew)
+                    .help("Straightens slightly skewed scans. Only pages without a kept text layer. Default: on.")
+                TextField("Minimum skew (degrees)", value: $profile.deskewMinAngle,
                           format: .number.precision(.fractionLength(0...2)))
                     .disabled(!profile.deskew)
-                    .help("Kleinere Schräglagen bleiben. Standard: 0,2.")
-                TextField("Suchbereich ± (Grad)", value: $profile.deskewMaxAngle,
+                    .help("Smaller skews are left as they are. Default: 0.2.")
+                TextField("Search range ± (degrees)", value: $profile.deskewMaxAngle,
                           format: .number.precision(.fractionLength(0...1)))
                     .disabled(!profile.deskew)
-                    .help("Ein Ergebnis am Rand gilt als unklar (z. B. Seite ohne Textzeilen) und wird nicht korrigiert. Standard: 5.")
-                TextField("Mindestdeutlichkeit Schräglage", value: $profile.deskewConfidence,
+                    .help("Skew angles are searched within this range. A result at the edge of the range counts as ambiguous (e.g. a page without lines of text) and is not corrected. Default: 5.")
+                TextField("Minimum skew clarity", value: $profile.deskewConfidence,
                           format: .number.precision(.fractionLength(0...2)))
                     .disabled(!profile.deskew)
-                    .help("Nur begradigen, wenn sich der beste Winkel so deutlich abhebt (× Median). Verhindert, dass Logos oder Stempel auf textarmen Seiten eine gerade Seite schief drehen. Standard: 1,3.")
+                    .help("Only deskews if the best angle clearly stands out (factor over the median of all angles tested). Prevents logos or stamps on pages with little text from tilting a straight page. Default: 1.3.")
             }
-            Section("Leere Seiten") {
-                Toggle("Leere gescannte Seiten entfernen", isOn: $profile.removeBlank)
-                TextField("Leer unter Tintenanteil (%)", value: $profile.blankInkPercent,
+            Section("Blank pages") {
+                Toggle("Remove blank scanned pages", isOn: $profile.removeBlank)
+                    .help("Removes scanned pages without content, e.g. empty back sides from duplex scanning. Digital pages are never removed. Default: on.")
+                TextField("Blank below ink share (%)", value: $profile.blankInkPercent,
                           format: .number.precision(.fractionLength(0...4)))
                     .disabled(!profile.removeBlank)
-                    .help("Eine Seite mit nur einer Seitenzahl liegt bei ca. 0,05 %. Standard: 0,005 %.")
-                TextField("Leer nur ab Papierfläche (%)", value: $profile.blankPaperPercent,
+                    .help("A page counts as blank if less than this share of its area is ink. A page with only a page number is about 0.05 %. Default: 0.005.")
+                TextField("Minimum paper area for blank (%)", value: $profile.blankPaperPercent,
                           format: .number.precision(.fractionLength(0...1)))
                     .disabled(!profile.removeBlank)
-                    .help("Schützt kontrastarme Fotos (z. B. einer Wand) davor, als leer entfernt zu werden. Standard: 90.")
+                    .help("A page only counts as blank if at least this share of it is paper. Protects low-contrast photos (e.g. of a wall) from being removed as blank. Default: 90.")
             }
-            Section("Qualität und Größe") {
-                Picker("Hintergrundauflösung", selection: $profile.bgDownsample) {
-                    Text("Voll").tag(1)
-                    Text("1/2 (Standard)").tag(2)
-                    Text("1/3").tag(3)
-                    Text("1/4").tag(4)
+            Section("Quality and size") {
+                Picker("Background resolution", selection: $profile.bgDownsample) {
+                    Text("Full").tag(1)
+                    Text("1/2 (default)").tag(2)
+                    Text(verbatim: "1/3").tag(3)
+                    Text(verbatim: "1/4").tag(4)
                 }
-                LabeledContent(L("Kompressionsrate: %lld", Int(profile.bgRate))) {
+                .help("Resolution of the background layer (paper, colored areas, pictures) relative to the scan. Text and lines always stay at full resolution. Default: 1/2.")
+                LabeledContent(L("Compression rate: %lld", Int(profile.bgRate))) {
                     Slider(value: $profile.bgRate, in: 50...800, step: 25)
                 }
-                .help("Höher = kleinere Datei; Farbflächen und hellgraue Schrift leiden. Standard: 200.")
-                Toggle("Falsche Seitengrößen (z. B. Handyscans) auf A4 korrigieren", isOn: $profile.fitA4)
-                Picker("Höchstauflösung", selection: $profile.maxDpi) {
-                    Text("Aus (Standard)").tag(0)
-                    Text("200 dpi").tag(200)
-                    Text("300 dpi").tag(300)
-                    Text("400 dpi").tag(400)
+                .help("JPEG 2000 compression of the background layer. Higher = smaller file; colored areas and light-gray text suffer. Default: 200.")
+                Toggle("Correct wrong page sizes to A4", isOn: $profile.fitA4)
+                    .help("Scales scanned pages with implausible page sizes (e.g. phone scans stored as 61 × 86 cm) to A4, so they display and print at a normal size. Default: on.")
+                Picker("Maximum resolution", selection: $profile.maxDpi) {
+                    Text("Off (default)").tag(0)
+                    Text(verbatim: "200 dpi").tag(200)
+                    Text(verbatim: "300 dpi").tag(300)
+                    Text(verbatim: "400 dpi").tag(400)
                 }
-                .help("Höher aufgelöste Scans werden herunterskaliert: schneller und kleiner, feinste Details gehen verloren.")
-                LabeledContent(profile.sharpen == 0 ? L("Nachschärfen: aus") : L("Nachschärfen: %lld %%", profile.sharpen)) {
+                .help("Downscales scans with a higher resolution before compressing: faster and smaller, but the finest details are lost. Default: off.")
+                LabeledContent(profile.sharpen == 0 ? L("Sharpening: off") : L("Sharpening: %lld %%", profile.sharpen)) {
                     Slider(value: Binding(get: { Double(profile.sharpen) }, set: { profile.sharpen = Int($0) }),
                            in: 0...300, step: 25)
                 }
-                .help("Hebt hellgraue, dünne Schrift an, damit sie scharf bleibt. Standard: 150 %, 0 = aus.")
-                TextField("Radius Nachschärfen (px bei 200 dpi)", value: $profile.sharpenRadius,
+                .help("Sharpens before compressing so that light-gray, thin text stays crisp. 0 = off. Default: 150 %.")
+                TextField("Sharpening radius (px at 200 dpi)", value: $profile.sharpenRadius,
                           format: .number.precision(.fractionLength(0...1)))
                     .disabled(profile.sharpen == 0)
-                    .help("Standard: 1,5. Wird mit der Auflösung des Scans skaliert.")
-                LabeledContent(L("Textmaske: Faktor %.2f", profile.maskFactor)) {
+                    .help("Radius of the sharpening in pixels at 200 dpi; scaled with the resolution of the scan. Default: 1.5.")
+                LabeledContent(L("Text mask factor: %.2f", profile.maskFactor)) {
                     Slider(value: $profile.maskFactor, in: 0.1...1.0, step: 0.05)
                 }
-                .help("Kleiner = auch hellgraue Schrift bleibt scharf (mehr Pixel in der Textmaske), aber eher Punkte/Rauschen. 1 = recode_pdf-Standard. Standard: 0,5.")
-                Stepper(profile.jobs == 0 ? L("Gleichzeitige Seiten: automatisch") : L("Gleichzeitige Seiten: %lld", profile.jobs),
+                .help("Decides which pixels go into the sharp text layer. Smaller = light-gray text also stays sharp, but more specks. 1 = recode_pdf default. Default: 0.5.")
+                Stepper(profile.jobs == 0 ? L("Simultaneous pages: automatic") : L("Simultaneous pages: %lld", profile.jobs),
                         value: $profile.jobs, in: 0...16)
-                    .help("Automatisch = Anzahl der Prozessorkerne.")
+                    .help("Number of pages processed at the same time. Automatic = number of processor cores.")
             }
-            Section("Ausgabe") {
-                Picker("Ergebnis", selection: $profile.output) {
-                    Text("Als Kopie neben dem Original").tag(OutputMode.copy)
-                    Text("Original ersetzen (Original in den Papierkorb)").tag(OutputMode.replace)
+            Section("Output") {
+                Picker("Result", selection: $profile.output) {
+                    Text("Save as a copy next to the original").tag(OutputMode.copy)
+                    Text("Replace the original (original goes to the Trash)").tag(OutputMode.replace)
                 }
                 .pickerStyle(.radioGroup)
+                .help("A result is only saved if it was verified and is smaller. Otherwise no file is created and the original stays unchanged; an existing copy is not overwritten. Default: copy.")
                 if profile.output == .copy {
-                    TextField("Namenszusatz", text: $profile.suffix)
+                    TextField("File name suffix", text: $profile.suffix)
+                        .help("Added to the file name of the copy, e.g. “Invoice (compressed).pdf”.")
                 }
             }
             Section {
-                Button("Standardwerte wiederherstellen") { profile = Profile() }
+                Button("Restore defaults") { profile = Profile() }
+                    .help("Resets all settings in this tab to their defaults.")
             }
         }
         .formStyle(.grouped)

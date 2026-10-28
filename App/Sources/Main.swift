@@ -24,9 +24,9 @@ enum Main {
             for code in files {
                 do {
                     try PaperlessRun.blocking { try await Languages.download(code) }
-                    print(L("Sprache „%@“ installiert", code))
+                    print(L("Language “%@” installed", code))
                 } catch {
-                    FileHandle.standardError.write(Data((L("Fehler: %@", error.localizedDescription) + "\n").utf8))
+                    FileHandle.standardError.write(Data((L("Error: %@", error.localizedDescription) + "\n").utf8))
                     exit(1)
                 }
             }
@@ -34,7 +34,7 @@ enum Main {
             do {
                 try PaperlessToken.save(readLine(strippingNewline: true) ?? "")
             } catch {
-                FileHandle.standardError.write(Data((L("Fehler: %@", error.localizedDescription) + "\n").utf8))
+                FileHandle.standardError.write(Data((L("Error: %@", error.localizedDescription) + "\n").utf8))
                 exit(1)
             }
         default: PDFMRCApp.main()
@@ -52,7 +52,7 @@ enum ContextMenuRun {
             do {
                 text = try Converter.convert(src, with: profile).message
             } catch {
-                text = L("Fehler: %@", error.localizedDescription)
+                text = L("Error: %@", error.localizedDescription)
             }
             report(src, text)
         }
@@ -86,7 +86,7 @@ enum PaperlessRun {
             // Verbindung und Token vorab prüfen: klare Meldung statt abgebrochenem Upload, keine Daten umsonst
             try blocking { try await client.check() }
         } catch {
-            paths.forEach { ContextMenuRun.report(URL(fileURLWithPath: $0), L("Fehler: %@", error.localizedDescription)) }
+            paths.forEach { ContextMenuRun.report(URL(fileURLWithPath: $0), L("Error: %@", error.localizedDescription)) }
             return
         }
 
@@ -106,15 +106,15 @@ enum PaperlessRun {
                     copy = compressed
                     if compressed.changed {
                         file = compressed.file
-                        note = L("Komprimiert (%@). ", compressed.message)
+                        note = L("Compressed (%@). ", compressed.message)
                     } else {
-                        note = L("Nicht komprimiert (%@), Original gesendet. ", compressed.message)
+                        note = L("Not compressed (%@), original sent. ", compressed.message)
                     }
                 }
                 let task = try blocking { try await client.upload(file, filename: src.lastPathComponent) }
                 pending.append((src, task, note))
             } catch {
-                ContextMenuRun.report(src, L("Fehler: %@", error.localizedDescription))
+                ContextMenuRun.report(src, L("Error: %@", error.localizedDescription))
             }
         }
 
@@ -127,19 +127,19 @@ enum PaperlessRun {
                 case .running:
                     return true
                 case .created(let id):
-                    ContextMenuRun.report(item.src, item.note + (id.map { L("In Paperless angelegt (Dokument #%lld)", $0) } ?? L("In Paperless angelegt")))
+                    ContextMenuRun.report(item.src, item.note + (id.map { L("Added to Paperless (document #%lld)", $0) } ?? L("Added to Paperless")))
                 case .duplicate(let id):
-                    ContextMenuRun.report(item.src, item.note + (id.map { L("Paperless: Duplikat von Dokument #%lld – nicht übernommen", $0) }
-                                                       ?? L("Paperless: Duplikat – nicht übernommen")))
+                    ContextMenuRun.report(item.src, item.note + (id.map { L("Paperless: duplicate of document #%lld – not added", $0) }
+                                                       ?? L("Paperless: duplicate – not added")))
                 case .failed(let message):
-                    ContextMenuRun.report(item.src, item.note + L("Paperless-Fehler: %@", message))
+                    ContextMenuRun.report(item.src, item.note + L("Paperless error: %@", message))
                 }
                 return false
             }
             if pending.isEmpty { break }
             if Date() > deadline {
                 pending.forEach {
-                    ContextMenuRun.report($0.src, $0.note + L("Hochgeladen; Paperless verarbeitet noch – Ergebnis dort prüfen"))
+                    ContextMenuRun.report($0.src, $0.note + L("Uploaded; Paperless is still processing – check the result there"))
                 }
                 break
             }

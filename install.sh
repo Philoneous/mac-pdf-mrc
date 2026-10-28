@@ -17,7 +17,7 @@ REPO_URL="${REPO_URL:-https://github.com/Philoneous/mac-pdf-mrc.git}"
 PACKAGE="${PACKAGE:-git+https://github.com/Philoneous/paperless-mrc.git}"  # Verarbeitung
 SRC_DIR="${SRC_DIR:-}"  # vorhandener Checkout statt Download (Entwicklung, CI)
 APP="$HOME/Applications/PDF MRC.app"
-NAME="PDF komprimieren (MRC)"
+NAME="PDF komprimieren (MRC)"  # Menütitel bei deutscher Systemsprache (englisch: „Compress PDF (MRC)“)
 
 msg() { printf '[..] %s\n' "$*"; }
 ok()  { printf '[OK] %s\n' "$*"; }

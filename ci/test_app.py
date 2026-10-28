@@ -22,7 +22,7 @@ HOME = Path.home()
 APP = Path(os.environ.get("MRC_APP", HOME / "Applications/PDF MRC.app"))  # DMG-Test: /Applications
 BIN = APP / "Contents/MacOS/pdf-mrc"
 SETTINGS = HOME / "Library/Application Support/mac-pdf-mrc/settings.json"
-WORKFLOW = HOME / "Library/Services/PDF komprimieren (MRC).workflow"
+WORKFLOW = HOME / "Library/Services/Compress PDF (MRC).workflow"
 LETTER = ["Stadtwerke Musterstadt GmbH", "Jahresabrechnung 2025 fuer Wasser und Waerme",
           "Sehr geehrte Damen und Herren,", "der Betrag von 1.284,50 EUR wird zum 1. Dezember faellig."]
 PAPER = np.array([248, 246, 240], np.float32)
@@ -138,7 +138,7 @@ def main() -> None:
         d.saveIncr()
     out = run_app(mixed, quick=profile(mixedPdfs=False))
     assert not (tmp / "gemischt (komprimiert).pdf").exists(), out
-    assert "contains non-scanned pages" in out, out
+    assert "contains digital pages" in out, out
     run_app(mixed, quick=profile())  # alte Einstellungsdatei ohne neue Schlüssel: Standard = bearbeiten
     assert (tmp / "gemischt (komprimiert).pdf").exists()
     print("ok: neue Einstellungen")
@@ -162,7 +162,7 @@ def main() -> None:
     try:
         german = write_scan(tmp / "deutsch.pdf", [scan_image(rng), blank_image(rng)])
         out = run_app(german, quick=profile())
-        assert "Seite(n), 1 leere entfernt, Textebene per Tesseract" in out, out
+        assert "Seite(n), 1 leere Seite(n) entfernt, Text mit Tesseract erkannt" in out, out
     finally:
         subprocess.run(["defaults", "delete", "io.github.philoneous.mac-pdf-mrc", "AppleLanguages"], check=False)
     print("ok: deutsche Meldungen")

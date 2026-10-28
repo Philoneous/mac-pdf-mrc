@@ -55,8 +55,8 @@ def main() -> None:
     url = server.start()
 
     # Vorlagen der drei Schnellaktionen liegen in der App
-    for name, flag in (("PDF komprimieren (MRC)", "--kontextmenue"), ("An Paperless senden", "--paperless"),
-                       ("Komprimieren und an Paperless senden", "--paperless-komprimiert")):
+    for name, flag in (("Compress PDF (MRC)", "--kontextmenue"), ("Send to Paperless", "--paperless"),
+                       ("Compress and Send to Paperless", "--paperless-komprimiert")):
         with open(RESOURCES / f"{name}.workflow/Contents/document.wflow", "rb") as f:
             cmd = plistlib.load(f)["actions"][0]["action"]["ActionParameters"]["COMMAND_STRING"]
         assert cmd == f'"__APP_EXECUTABLE__" {flag} "$@"', cmd  # Pfad trägt die App beim Einrichten ein
@@ -82,7 +82,7 @@ def main() -> None:
 
     # Originale senden (zwei Dateien in einem Aufruf)
     out = run_app("--paperless", scan, digital, url=url + "/")
-    assert "Created in Paperless (document #42)" in out and "Created in Paperless (document #43)" in out, out
+    assert "Added to Paperless (document #42)" in out and "Added to Paperless (document #43)" in out, out
     for (name, data), path in zip(server.uploads, (scan, digital)):
         assert name == path.name, (ascii(name), ascii(path.name))  # Umlaut zusammengesetzt (NFC)
         assert data == path.read_bytes(), (len(data), path.stat().st_size)
@@ -90,7 +90,7 @@ def main() -> None:
 
     # Komprimiert senden: kleiner, leere Seite entfernt, Text vorhanden
     out = run_app("--paperless-komprimiert", scan2, url=url)
-    assert "Compressed (" in out and "page(s), 1 blank removed" in out and "document #44" in out, out
+    assert "Compressed (" in out and "page(s), 1 blank page(s) removed" in out and "document #44" in out, out
     name, data = server.uploads[-1]
     assert name == "Rechnung.pdf"
     assert len(data) < scan2.stat().st_size / 3, (len(data), scan2.stat().st_size)

@@ -11,13 +11,13 @@ server.
 The processing is done by [paperless-mrc](https://github.com/Philoneous/paperless-mrc) – the same script that
 compresses new scans inside Paperless-ngx – which in turn uses [archive-pdf-tools](https://github.com/internetarchive/archive-pdf-tools)
 from the Internet Archive. Its README explains what happens in detail (scanned pages only, blank pages removed, text
-layer kept or recognised with Tesseract, wrong page sizes corrected, result verified).
+layer kept or recognized with Tesseract, wrong page sizes corrected, result verified).
 
 ## Installation
 
 1. Download `PDF-MRC.dmg` from the [latest release](https://github.com/Philoneous/mac-pdf-mrc/releases/latest).
 2. Open it and drag **PDF MRC** to **Applications**.
-3. First launch: the app is not notarised by Apple, so macOS blocks it once. Open *System Settings → Privacy &
+3. First launch: the app is not notarized by Apple, so macOS blocks it once. Open *System Settings → Privacy &
    Security*, scroll down and click **Open Anyway**.
 
 Requirements: macOS 13 or later, Apple silicon. Everything the app needs (Python, paperless-mrc, Tesseract, OpenJPEG,
@@ -27,7 +27,7 @@ jbig2enc, Poppler) is inside the app – no Homebrew required.
 downloads new versions in the background and installs them when you quit it. Converting via the context menu does not
 check, so open the app now and then. The *About* tab lets you choose *install automatically*, *ask before installing*
 or *manually only*, and check now (also *PDF MRC → Check for Updates …*). Updates are signed (EdDSA) and verified
-before installation. The *About* tab also shows the version, the licence and the licences of the bundled components.
+before installation. The *About* tab also shows the version, the license and the licenses of the bundled components.
 
 ## Using the app
 
@@ -35,14 +35,14 @@ before installation. The *About* tab also shows the version, the licence and the
 paperless-mrc appear below; *Show in Finder* opens the new file.
 
 **Context menu:** switch the Finder Quick Action *Compress PDF (MRC)* on or off and set its own settings (independent
-of manual conversion; *Copy settings from manual conversion* copies them over). Right-click one or more PDFs →
+of manual conversion; *Copy settings from “Convert manually”* copies them over). Right-click one or more PDFs →
 *Quick Actions*. Each result appears as a notification.
 
 **Paperless:** address of your Paperless-ngx server and API token (in Paperless under *My Profile*), *Save and test
 connection*, and two more Quick Actions:
 
 - **Send to Paperless** – sends the PDF unchanged; Paperless (with paperless-mrc) compresses it there.
-- **Compress and send to Paperless** – compresses on the Mac first (settings from the *Context menu* tab) and sends the
+- **Compress and Send to Paperless** – compresses on the Mac first (settings from the *Context menu* tab) and sends the
   result, or the original if it cannot be made smaller. paperless-mrc on the server leaves such a file unchanged, so
   nothing is converted twice.
 
@@ -65,35 +65,37 @@ The interface follows the system language (German or English; other languages �
 
 ### Settings (per profile; *Restore defaults* resets them)
 
+Every setting shows this explanation as a tooltip when you hold the pointer over it.
+
 | Setting | Default | Effect |
 |---|---|---|
 | **Page selection** | | |
 | Also process PDFs with digital pages | on | digital pages stay unchanged; off = only pure scan PDFs |
 | Leave photo pages unchanged | on | MRC visibly degrades photos |
-| Text recognition checks below paper area (%) | 50 | pages with less paper area (photos, text on coloured backgrounds) only count as documents if enough text is recognised |
-| Photo below confidently recognised words | 10 | words with ≥ 3 characters and high confidence |
-| Rasterise vectorised scans | on | pages without image and text made of thousands of vector elements are rasterised and made searchable |
-| Vectorised from elements / raster resolution | 1000 / 300 dpi | |
+| Text check below paper area (%) | 50 | pages with less paper area (photos, text on colored backgrounds) only count as documents if enough text is recognized |
+| Photo below confident words | 10 | words with ≥ 3 characters and high confidence |
+| Rasterize vectorized scans and make them searchable | on | pages without image and text made of thousands of vector elements are rasterized and made searchable |
+| Vectorized from elements / raster resolution | 1000 / 300 dpi | |
 | **Text recognition** | | |
-| Keep existing text layer | on | off = always recognise again with Tesseract |
+| Keep existing text layer | on | off = always recognize again with Tesseract |
 | Languages | `deu+eng` | Tesseract languages; more can be downloaded |
 | Rotate pages automatically / minimum confidence | on / 12 | only pages without a kept text layer |
-| Deskew / only from / search range ± | on / 0.2° / 5° | a result at the edge of the search range counts as ambiguous → no correction |
+| Deskew / minimum skew / search range ± | on / 0.2° / 5° | a result at the edge of the search range counts as ambiguous → no correction |
 | Minimum skew clarity | 1.3 | only deskew if the best angle clearly stands out; prevents logos or stamps on text-poor pages from tilting a straight page |
 | **Blank pages** | | |
 | Remove blank scanned pages | on | |
 | Blank below ink share (%) | 0.005 | a page with only a page number is about 0.05 % |
-| Blank only from paper area (%) | 90 | protects low-contrast photos from being removed as blank |
+| Minimum paper area for blank (%) | 90 | protects low-contrast photos from being removed as blank |
 | **Quality and size** | | |
 | Background resolution | 1/2 | text and lines always stay at full resolution |
-| Compression rate | 200 | higher = smaller; colour areas and light-grey text suffer |
+| Compression rate | 200 | higher = smaller; color areas and light-gray text suffer |
 | Correct wrong page sizes to A4 | on | e.g. phone scans with 61 × 86 cm |
-| Sharpening / radius | 150 % / 1.5 px | light-grey, thin text stays sharp; 0 = off |
-| Text mask: factor | 0.5 | smaller = light-grey text also stays sharp; 1 = recode_pdf default |
+| Sharpening / radius | 150 % / 1.5 px | light-gray, thin text stays sharp; 0 = off |
+| Text mask factor | 0.5 | smaller = light-gray text also stays sharp; 1 = recode_pdf default |
 | Maximum resolution | off | downscale higher-resolution scans (e.g. 300 dpi): faster and smaller |
 | Simultaneous pages | automatic | number of processor cores |
 | **Output** | | |
-| Result | copy | *As a copy next to the original* (`<name> (compressed).pdf`, suffix configurable) or *Replace original* (original to the Trash) |
+| Result | copy | *Save as a copy next to the original* (`<name> (compressed).pdf`, suffix configurable) or *Replace the original* (original goes to the Trash) |
 
 Not switchable (safety): digitally signed PDFs stay unchanged, and a result is only produced if it was verified and is
 smaller. Otherwise no file is created and the original stays as it is; an existing copy is not overwritten.
@@ -103,8 +105,8 @@ Settings are stored in `~/Library/Application Support/mac-pdf-mrc/settings.json`
 
 - If a Quick Action does not appear: check *System Settings → Keyboard → Keyboard Shortcuts → Services*.
 - The first time the app accesses Desktop, Documents or Downloads, macOS asks for permission.
-- **Uninstall:** delete *PDF MRC* from Applications, the Quick Actions in `~/Library/Services` (*PDF komprimieren
-  (MRC)*, *An Paperless senden*, *Komprimieren und an Paperless senden*) and `~/Library/Application Support/mac-pdf-mrc`.
+- **Uninstall:** delete *PDF MRC* from Applications, the Quick Actions in `~/Library/Services` (*Compress PDF (MRC)*,
+  *Send to Paperless*, *Compress and Send to Paperless*) and `~/Library/Application Support/mac-pdf-mrc`.
 - Intel Macs are not supported (archive-pdf-tools has no prebuilt Intel package).
 
 ### Alternative: Homebrew installer (backup)
@@ -144,6 +146,6 @@ update.
 The app runs paperless-mrc the way Paperless does: `DOCUMENT_WORKING_PATH` pointing to a copy, settings via
 `PAPERLESS_OCR_*` and `MRC_*`, result from the machine-readable line `paperless-mrc-result: {…}`.
 
-## Licence
+## License
 
 GNU Affero General Public License v3.0 or later (`AGPL-3.0-or-later`), see [LICENSE](LICENSE) – like paperless-mrc.
