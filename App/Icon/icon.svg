@@ -6,48 +6,68 @@
     <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#FFF1D6"/><stop offset="1" stop-color="#FBC9A2"/>
     </linearGradient>
-    <!-- Liquid Glass: spiegelnder Rand (oben links und unten rechts hell), Glanz oben -->
+    <!-- Glanzkante: Licht von oben links, Gegenlicht unten rechts -->
     <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#FFFFFF" stop-opacity="1"/>
-      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.4"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="0.3" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0.12"/>
+      <stop offset="0.85" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.95"/>
     </linearGradient>
-    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/>
-      <stop offset="0.3" stop-color="#FFFFFF" stop-opacity="0.08"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.12"/>
+    <linearGradient id="rimInner" x1="1" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.6"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.35"/>
     </linearGradient>
-    <!-- Milchglas: Dahinterliegendes unscharf und etwas farbkräftiger -->
-    <filter id="frost" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="16"/>
-      <feColorMatrix type="saturate" values="1.2"/>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.32"/>
+      <stop offset="0.25" stop-color="#FFFFFF" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="clear" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="5"/><feColorMatrix type="saturate" values="1.25"/>
     </filter>
+    <filter id="edge" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="9"/><feColorMatrix type="saturate" values="1.5"/>
+    </filter>
+    <filter id="soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="8"/></filter>
+    <filter id="glow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="9"/></filter>
     <filter id="shadowOnly" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="16" result="b"/>
-      <feOffset in="b" dx="-6" dy="16" result="o"/>
-      <feFlood flood-color="#0A1A4A" flood-opacity="0.38"/>
+      <feGaussianBlur in="SourceAlpha" stdDeviation="18" result="b"/>
+      <feOffset in="b" dx="-6" dy="18" result="o"/>
+      <feFlood flood-color="#0A1A4A" flood-opacity="0.32"/>
       <feComposite operator="in" in2="o"/>
     </filter>
 
-    <clipPath id="clipColor"><rect x="379" y="275" width="303.6" height="428.7" rx="20"/></clipPath>
-    <clipPath id="clipText"><rect x="244" y="330" width="330" height="466" rx="22"/></clipPath>
-
-    <!-- Ebenen (werden unten gezeichnet und als Hintergrund der Glasebenen wiederverwendet) -->
     <g id="base">
       <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
-      <!-- hinten rechts: Hintergrund (Papierton) -->
-      <rect x="500" y="228" width="280.5" height="396" rx="19" fill="#0A1A4A" filter="url(#shadowOnly)"/>
-      <rect x="500" y="228" width="280.5" height="396" rx="19" fill="url(#paper)"/>
+      <rect x="500" y="228" width="280.5" height="396" rx="24" fill="#000" filter="url(#shadowOnly)"/>
+      <rect x="500" y="228" width="280.5" height="396" rx="24" fill="url(#paper)"/>
     </g>
-
-    <!-- Mitte: Farbebene (Glas) mit Logo -->
+    
+    <clipPath id="clipcolor"><rect x="379" y="275" width="303.6" height="428.7" rx="30" /></clipPath>
+    <mask id="ringcolor" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <rect x="379" y="275" width="303.6" height="428.7" rx="30" fill="#fff"/>
+      <rect x="399" y="295" width="263.6" height="388.7" rx="10" fill="#000" filter="url(#soft)"/>
+    </mask>
     <g id="color">
-      <rect x="379" y="275" width="303.6" height="428.7" rx="20" fill="#000" filter="url(#shadowOnly)"/>
-      <g clip-path="url(#clipColor)"><use xlink:href="#base" filter="url(#frost)"/></g>
-      <rect x="379" y="275" width="303.6" height="428.7" rx="20" fill="url(#sheen)"/>
-      <rect x="379" y="275" width="303.6" height="428.7" rx="20" fill="#FFFFFF" fill-opacity="0.18"/>
-      <rect x="381" y="277" width="299.6" height="424.7" rx="18" fill="none" stroke="url(#rim)" stroke-width="5"/>
-      <!-- Logo: weißes Blatt im grünen Kreis -->
+      <rect x="379" y="275" width="303.6" height="428.7" rx="30" fill="#000" filter="url(#shadowOnly)"/>
+      <g clip-path="url(#clipcolor)">
+        <!-- Mitte: klar, leicht vergrößert (Linse) -->
+        <g filter="url(#clear)" transform="translate(530.8 489.35) scale(1.05) translate(-530.8 -489.35)"><use xlink:href="#base"/></g>
+        <!-- Rand: stärker vergrößert und verwischt (Lichtbrechung der Glaskante) -->
+        <g mask="url(#ringcolor)"><g filter="url(#edge)" transform="translate(530.8 489.35) scale(1.16) translate(-530.8 -489.35)"><use xlink:href="#base"/></g></g>
+      </g>
+      <rect x="379" y="275" width="303.6" height="428.7" rx="30" fill="#FFFFFF" fill-opacity="0.14"/>
+      <rect x="379" y="275" width="303.6" height="428.7" rx="30" fill="url(#sheen)"/>
+      <!-- Glasdicke: weiches Leuchten innen am Rand -->
+      <g clip-path="url(#clipcolor)"><rect x="379" y="275" width="303.6" height="428.7" rx="30" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="22" filter="url(#glow)"/></g>
+      <!-- Glanzkante -->
+      <rect x="380.5" y="276.5" width="300.6" height="425.7" rx="28.5" fill="none" stroke="url(#rim)" stroke-width="3"/>
+      <rect x="384" y="280" width="293.6" height="418.7" rx="25" fill="none" stroke="url(#rimInner)" stroke-width="1.5"/>
+    </g>
+    <g id="colorFull">
+      <use xlink:href="#color"/>
       <circle cx="627.4" cy="341.2" r="42.3" fill="#16A34A"/>
       <g transform="translate(627.4 341.2) scale(0.846)">
         <path d="M -26 26 C -30 -14 -2 -34 34 -34 C 34 4 12 30 -26 26 Z" fill="#FFFFFF"/>
@@ -55,39 +75,47 @@
         <path d="M -26 26 L -34 34" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
       </g>
     </g>
+    
+    <clipPath id="cliptext"><rect x="244" y="330" width="330" height="466" rx="32" /></clipPath>
+    <mask id="ringtext" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <rect x="244" y="330" width="330" height="466" rx="32" fill="#fff"/>
+      <rect x="264" y="350" width="290" height="426" rx="12" fill="#000" filter="url(#soft)"/>
+    </mask>
+    <g id="text">
+      <rect x="244" y="330" width="330" height="466" rx="32" fill="#000" filter="url(#shadowOnly)"/>
+      <g clip-path="url(#cliptext)">
+        <!-- Mitte: klar, leicht vergrößert (Linse) -->
+        <g filter="url(#clear)" transform="translate(409.0 563.0) scale(1.05) translate(-409.0 -563.0)"><use xlink:href="#base"/><use xlink:href="#colorFull"/></g>
+        <!-- Rand: stärker vergrößert und verwischt (Lichtbrechung der Glaskante) -->
+        <g mask="url(#ringtext)"><g filter="url(#edge)" transform="translate(409.0 563.0) scale(1.16) translate(-409.0 -563.0)"><use xlink:href="#base"/><use xlink:href="#colorFull"/></g></g>
+      </g>
+      <rect x="244" y="330" width="330" height="466" rx="32" fill="#FFFFFF" fill-opacity="0.26"/>
+      <rect x="244" y="330" width="330" height="466" rx="32" fill="url(#sheen)"/>
+      <!-- Glasdicke: weiches Leuchten innen am Rand -->
+      <g clip-path="url(#cliptext)"><rect x="244" y="330" width="330" height="466" rx="32" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="22" filter="url(#glow)"/></g>
+      <!-- Glanzkante -->
+      <rect x="245.5" y="331.5" width="327.0" height="463.0" rx="30.5" fill="none" stroke="url(#rim)" stroke-width="3"/>
+      <rect x="249" y="335" width="320" height="456" rx="27" fill="none" stroke="url(#rimInner)" stroke-width="1.5"/>
+    </g>
   </defs>
 
   <use xlink:href="#base"/>
-  <use xlink:href="#color"/>
-
-  <!-- vorne links: Textebene (Glas, nur die Schrift deckend) -->
-  <rect x="244" y="330" width="330" height="466" rx="22" fill="#000" filter="url(#shadowOnly)"/>
-  <g clip-path="url(#clipText)">
-    <use xlink:href="#base" filter="url(#frost)"/>
-    <use xlink:href="#color" filter="url(#frost)"/>
-  </g>
-  <rect x="244" y="330" width="330" height="466" rx="22" fill="url(#sheen)"/>
-  <rect x="244" y="330" width="330" height="466" rx="22" fill="#FFFFFF" fill-opacity="0.3"/>
-  <rect x="246" y="332" width="326" height="462" rx="20" fill="none" stroke="url(#rim)" stroke-width="5"/>
+  <use xlink:href="#colorFull"/>
+  <use xlink:href="#text"/>
   <g transform="translate(244 330)" fill="#0B1220">
-    <!-- Absender links neben dem Logo -->
     <rect x="30" y="36" width="150" height="14" rx="7"/>
     <rect x="30" y="60" width="110" height="10" rx="5"/>
     <rect x="30" y="78" width="125" height="10" rx="5"/>
-    <!-- Anschrift -->
     <rect x="30" y="122" width="120" height="11" rx="5.5"/>
     <rect x="30" y="141" width="140" height="11" rx="5.5"/>
     <rect x="30" y="160" width="100" height="11" rx="5.5"/>
-    <!-- Betreff -->
     <rect x="30" y="204" width="200" height="15" rx="7.5"/>
-    <!-- Text über die ganze Breite -->
     <rect x="30" y="240" width="270" height="11" rx="5.5"/>
     <rect x="30" y="261" width="262" height="11" rx="5.5"/>
     <rect x="30" y="282" width="270" height="11" rx="5.5"/>
     <rect x="30" y="303" width="180" height="11" rx="5.5"/>
     <rect x="30" y="335" width="270" height="11" rx="5.5"/>
     <rect x="30" y="356" width="245" height="11" rx="5.5"/>
-    <!-- Gruß -->
     <rect x="30" y="400" width="110" height="11" rx="5.5"/>
   </g>
 </svg>
