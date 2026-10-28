@@ -113,13 +113,12 @@ struct SettingsPane: View {
     var body: some View {
         Form {
             Section("Language") {
-                Picker("Language", selection: $language) {
+                Picker(selection: $language) {
                     Text("System language").tag(AppLanguage.system)
                     Text(verbatim: "English").tag(AppLanguage.en)
                     Text(verbatim: "Deutsch").tag(AppLanguage.de)
-                }
+                } label: { TipLabel("Language", tip: "Language of the app, of the Quick Action names in the Finder and of the paperless-mrc log. System language: German if your Mac uses German, otherwise English.") }
                 .onChange(of: language) { AppLanguage.current = $0 }
-                .help("Language of the app, of the Quick Action names in the Finder and of the paperless-mrc log. System language: German if your Mac uses German, otherwise English.")
                 if needsRestart {
                     HStack {
                         Text("The new language is used after a restart.").foregroundStyle(.secondary)
@@ -133,14 +132,12 @@ struct SettingsPane: View {
 
             Section("Updates") {
                 if Updates.available {
-                    Picker("Updates", selection: $mode) {
+                    Picker(selection: $mode) {
                         Text("Install automatically").tag(UpdateMode.automatic)
                         Text("Check automatically, ask before installing").tag(UpdateMode.ask)
                         Text("Manually only").tag(UpdateMode.manual)
-                    }
+                    } label: { TipLabel("Installation", tip: "Install automatically: new versions are downloaded in the background and installed when you quit the app. Ask: the app shows new versions and asks before installing. Manually only: no automatic checks; use “Check for updates now”.") }
                     .pickerStyle(.radioGroup)
-                    .labelsHidden()
-                    .help("Install automatically: new versions are downloaded in the background and installed when you quit the app. Ask: the app shows new versions and asks before installing. Manually only: no automatic checks; use “Check for updates now”.")
                     .onChange(of: mode) { UpdateMode.current = $0 }
                     TimelineView(.periodic(from: .now, by: 10)) { _ in
                         LabeledContent("Last checked", value: Updates.lastCheck.map {

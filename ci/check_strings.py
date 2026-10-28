@@ -33,6 +33,10 @@ def swift_keys() -> set[str]:
         keys.update(re.findall(r'\b(?:Text|Toggle|Button|Section|Picker|TextField|SecureField|LabeledContent|'
                                r'Stepper|Link|TableColumn|confirmationDialog|Label)\(' + LITERAL, text))
         keys.update(re.findall(r'\.help\(' + LITERAL, text))
+        # Optionen mit ⓘ: Beschriftung und Erklärung
+        keys.update(re.findall(r'\bTipLabel\(' + LITERAL, text))
+        keys.update(re.findall(r'\btip: ' + LITERAL, text))
+        keys.update(re.findall(r'\bInfoTip\(' + LITERAL, text))
         # Namen der Schnellaktionen (QuickAction(name: …), Menütitel per L(name))
         keys.update(re.findall(r'QuickAction\(name: ' + LITERAL, text))
     return {k.replace('\\"', '"') for k in keys if "\\(" not in k}

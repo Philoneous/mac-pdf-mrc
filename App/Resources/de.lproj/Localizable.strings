@@ -80,6 +80,7 @@
 "Includes archive-pdf-tools (Internet Archive), PyMuPDF, Tesseract, OpenJPEG, jbig2enc, Poppler and Sparkle, among others, each under its own license." = "Enthält u. a. archive-pdf-tools (Internet Archive), PyMuPDF, Tesseract, OpenJPEG, jbig2enc, Poppler und Sparkle, jeweils unter eigener Lizenz.";
 "Install automatically" = "Automatisch installieren";
 "Install automatically: new versions are downloaded in the background and installed when you quit the app. Ask: the app shows new versions and asks before installing. Manually only: no automatic checks; use “Check for updates now”." = "Automatisch installieren: Neue Versionen werden im Hintergrund geladen und beim Beenden der App installiert. Fragen: Die App zeigt neue Versionen an und fragt vor der Installation. Nur manuell: keine automatische Suche; „Jetzt nach Updates suchen“ verwenden.";
+"Installation" = "Installation";
 "Installed: %@" = "Installiert: %@";
 "Invalid language code “%@” (e.g. fra, pol, chi_sim)." = "Ungültiges Sprachkürzel „%@“ (z. B. fra, pol, chi_sim).";
 "Invalid server address “%@” (expected e.g. https://paperless.example.com)." = "Ungültige Serveradresse „%@“ (erwartet z. B. https://paperless.example.com).";
