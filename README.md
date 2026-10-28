@@ -94,6 +94,7 @@ Every setting shows this explanation as a tooltip when you hold the pointer over
 | Keep existing text layer | on | off = always recognize again with Tesseract |
 | Languages | `deu+eng` | Tesseract languages; more can be downloaded |
 | Rotate pages automatically / minimum confidence | on / 12 | only pages without a kept text layer |
+| Check uncertain rotation with text recognition | on | if the orientation detection is unsure but suggests a rotation, text is recognized in both orientations; rotated only with at least 1.5× as many confident words (e.g. landscape forms scanned in portrait) |
 | Deskew / minimum skew / search range ± | on / 0.2° / 5° | a result at the edge of the search range counts as ambiguous → no correction |
 | Minimum skew clarity | 1.3 | only deskew if the best angle clearly stands out; prevents logos or stamps on text-poor pages from tilting a straight page |
 | **Blank pages** | | |

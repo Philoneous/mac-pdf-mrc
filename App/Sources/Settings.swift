@@ -13,6 +13,7 @@ struct Profile: Codable, Equatable {
     var keepTextLayer = true
     var rotate = true
     var rotateThreshold = 12.0
+    var rotateCheck = true  // unsichere Drehung per Texterkennung in beiden Lagen entscheiden
     var deskew = true
     var deskewMinAngle = 0.2
     var deskewMaxAngle = 5.0
@@ -56,6 +57,7 @@ struct Profile: Codable, Equatable {
         keepTextLayer = try value(.keepTextLayer, d.keepTextLayer)
         rotate = try value(.rotate, d.rotate)
         rotateThreshold = try value(.rotateThreshold, d.rotateThreshold)
+        rotateCheck = try value(.rotateCheck, d.rotateCheck)
         deskew = try value(.deskew, d.deskew)
         deskewMinAngle = try value(.deskewMinAngle, d.deskewMinAngle)
         deskewMaxAngle = try value(.deskewMaxAngle, d.deskewMaxAngle)
@@ -91,6 +93,7 @@ struct Profile: Codable, Equatable {
             "PAPERLESS_OCR_ROTATE_PAGES_THRESHOLD": String(rotateThreshold),
             "PAPERLESS_OCR_DESKEW": flag(deskew),
             "MRC_KEEP_TEXT_LAYER": flag(keepTextLayer),
+            "MRC_ROTATE_CHECK": flag(rotateCheck),
             "MRC_DESKEW_MIN_ANGLE": String(deskewMinAngle),
             "MRC_DESKEW_MAX_ANGLE": String(deskewMaxAngle),
             "MRC_DESKEW_MIN_CONFIDENCE": String(deskewConfidence),

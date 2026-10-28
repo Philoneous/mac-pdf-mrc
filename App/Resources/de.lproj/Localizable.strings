@@ -32,6 +32,7 @@
 "Check automatically, ask before installing" = "Automatisch suchen, vor der Installation fragen";
 "Check for updates now" = "Jetzt nach Updates suchen";
 "Check for Updates…" = "Nach Updates suchen …";
+"Check uncertain rotation with text recognition" = "Unsichere Drehung per Texterkennung prüfen";
 "Checks right away whether a new version is available." = "Prüft sofort, ob eine neue Version verfügbar ist.";
 "Choose PDF…" = "PDF auswählen …";
 "Clear History" = "Verlauf löschen";
@@ -76,6 +77,7 @@
 "Finder context menu" = "Finder-Kontextmenü";
 "Full" = "Voll";
 "History" = "Verlauf";
+"If the orientation detection is unsure (below the minimum confidence) but suggests a rotation, the text is recognized in both orientations; the page is only rotated if that gives clearly more confidently recognized words (at least 1.5 times as many). Helps with landscape forms scanned in portrait. Costs extra time only for such pages. Default: on." = "Ist sich die Ausrichtungserkennung unsicher (unter der Mindestsicherheit), schlägt aber eine Drehung vor, wird der Text in beiden Lagen erkannt; gedreht wird nur, wenn das deutlich mehr sicher erkannte Wörter ergibt (mindestens 1,5-mal so viele). Hilft bei hochkant gescannten Querformat-Formularen. Kostet nur bei solchen Seiten zusätzliche Zeit. Standard: an.";
 "In Paperless under “My Profile” → “API Auth Token”. Stored in the macOS keychain. After an app update, macOS asks once whether the app may still access it." = "In Paperless unter „Mein Profil“ → „API-Auth-Token“. Wird im macOS-Schlüsselbund gespeichert. Nach einem Update der App fragt macOS einmal, ob sie weiter darauf zugreifen darf.";
 "Includes archive-pdf-tools (Internet Archive), PyMuPDF, Tesseract, OpenJPEG, jbig2enc, Poppler and Sparkle, among others, each under its own license." = "Enthält u. a. archive-pdf-tools (Internet Archive), PyMuPDF, Tesseract, OpenJPEG, jbig2enc, Poppler und Sparkle, jeweils unter eigener Lizenz.";
 "Install automatically" = "Automatisch installieren";

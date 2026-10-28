@@ -100,6 +100,7 @@ Jede Einstellung zeigt diese Erklärung als Tooltip, wenn man den Mauszeiger dar
 | Vorhandene Textebene übernehmen | an | aus = immer neu mit Tesseract erkennen |
 | Sprachen | `deu+eng` | Tesseract-Sprachen; weitere nachladbar |
 | Seiten automatisch drehen / Mindestsicherheit | an / 12 | nur Seiten ohne übernommene Textebene |
+| Unsichere Drehung per Texterkennung prüfen | an | ist sich die Ausrichtungserkennung unsicher, schlägt aber eine Drehung vor, wird in beiden Lagen erkannt; gedreht nur bei mindestens 1,5-mal so vielen sicheren Wörtern (z. B. hochkant gescannte Querformat-Formulare) |
 | Schräglage begradigen / erst ab / Suchbereich ± | an / 0,2° / 5° | Ergebnis am Rand des Suchbereichs gilt als unklar → keine Korrektur |
 | Mindestdeutlichkeit der Schräglage | 1,3 | nur begradigen, wenn sich der beste Winkel deutlich abhebt; verhindert, dass Logos oder Stempel auf textarmen Seiten eine gerade Seite schief drehen |
 | **Leere Seiten** | | |

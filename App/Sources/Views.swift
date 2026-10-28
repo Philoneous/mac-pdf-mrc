@@ -505,6 +505,8 @@ struct ProfileForm: View {
                 TextField(value: $profile.rotateThreshold,
                           format: .number.precision(.fractionLength(0...1))) { TipLabel("Minimum rotation confidence", tip: "Confidence of Tesseract’s orientation detection required before a page is rotated. Higher = rotates less often. Default: 12.") }
                     .disabled(!profile.rotate)
+                Toggle(isOn: $profile.rotateCheck) { TipLabel("Check uncertain rotation with text recognition", tip: "If the orientation detection is unsure (below the minimum confidence) but suggests a rotation, the text is recognized in both orientations; the page is only rotated if that gives clearly more confidently recognized words (at least 1.5 times as many). Helps with landscape forms scanned in portrait. Costs extra time only for such pages. Default: on.") }
+                    .disabled(!profile.rotate)
                 Toggle(isOn: $profile.deskew) { TipLabel("Deskew", tip: "Straightens slightly skewed scans. Only pages without a kept text layer. Default: on.") }
                 TextField(value: $profile.deskewMinAngle,
                           format: .number.precision(.fractionLength(0...2))) { TipLabel("Minimum skew (degrees)", tip: "Smaller skews are left as they are. Default: 0.2.") }
