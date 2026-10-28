@@ -15,6 +15,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSLog("PDFMRC launched (background: %@)", background ? "yes" : "no")
+        if ProcessInfo.processInfo.environment["MRC_DIAGNOSE"] != nil || background {
+            // Lebenszeichen des Main-Threads (Diagnose: hängt die Hintergrund-App?)
+            Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in NSLog("PDFMRC main alive") }
+        }
         QuickAction.setUp()
         JobCenter.shared.start()
         if background {

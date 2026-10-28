@@ -263,6 +263,7 @@ final class JobCenter: ObservableObject {
     var isBusy: Bool { !jobs.isEmpty }
 
     func start() {
+        NSLog("PDFMRC start")
         DistributedNotificationCenter.default().addObserver(forName: JobQueue.posted, object: nil, queue: .main) { _ in
             Task { @MainActor in JobCenter.shared.collect() }
         }

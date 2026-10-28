@@ -220,8 +220,15 @@ def main() -> None:
     while app_running() and time.time() < deadline:
         time.sleep(2)
     if app_running():
-        print(subprocess.run(["log", "show", "--last", "10m", "--predicate", 'eventMessage CONTAINS "PDFMRC"'],
-                             capture_output=True, text=True).stdout[-3000:])
+        logs = subprocess.run(["log", "show", "--last", "10m", "--predicate", 'eventMessage CONTAINS "PDFMRC"'],
+                              capture_output=True, text=True).stdout.splitlines()
+        print("\n".join(line[32:150] for line in logs if "alive" not in line)[-1500:])
+        print("main alive:", sum("alive" in line for line in logs))
+        pid = subprocess.run(["pgrep", "-f", f"{BIN} --hintergrund"], capture_output=True, text=True).stdout.split()[0]
+        sample = subprocess.run(["sample", pid, "1"], capture_output=True, text=True).stdout
+        main_thread = sample.split("Thread_")[1] if "Thread_" in sample else sample
+        frames = [l.strip()[:110] for l in main_thread.splitlines()[1:60] if l.strip()]
+        print("\n".join(frames[:45]))
     assert not app_running(), "App läuft nach dem Auftrag weiter"
     print("ok: Übergabe an die App")
 
