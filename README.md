@@ -23,20 +23,26 @@ layer kept or recognized with Tesseract, wrong page sizes corrected, result veri
 Requirements: macOS 13 or later, Apple silicon. Everything the app needs (Python, paperless-mrc, Tesseract, OpenJPEG,
 jbig2enc, Poppler) is inside the app – no Homebrew required.
 
-**Updates** are installed automatically (Sparkle): the app checks when it opens and every four hours while it is open,
-downloads new versions in the background and installs them when you quit it. Converting via the context menu does not
-check, so open the app now and then. The *About* tab lets you choose *install automatically*, *ask before installing*
-or *manually only*, and check now (also *PDF MRC → Check for Updates …*). Updates are signed (EdDSA) and verified
-before installation. The *About* tab also shows the version, the license and the licenses of the bundled components.
+**Updates** are installed automatically (Sparkle): the app checks when it starts – also when a Quick Action starts it
+in the background – and every four hours while it is running, downloads new versions in the background and installs
+them when it quits. Under *Settings* you can choose *install automatically*, *ask before installing* or *manually only*,
+and check now (also *PDF MRC → Check for Updates…*). Updates are signed (EdDSA) and verified before installation.
 
 ## Using the app
+
+The sidebar on the left leads to the sections *Convert manually*, *Context menu*, *Paperless*, *History*, *Settings*
+and *About*.
 
 **Convert manually:** drop a PDF or choose one, adjust the settings, *Convert*. The result and all messages from
 paperless-mrc appear below; *Show in Finder* opens the new file.
 
 **Context menu:** switch the Finder Quick Action *Compress PDF (MRC)* on or off and set its own settings (independent
 of manual conversion; *Copy settings from “Convert manually”* copies them over). Right-click one or more PDFs →
-*Quick Actions*. Each result appears as a notification.
+*Quick Actions*. The Quick Action hands the files to the app and finishes at once; the app works in the background
+(without a Dock icon), shows a symbol in the menu bar while it is busy – click it to see the progress of each file and
+the latest results – and reports each result as a notification with *Show in Finder* / *Open in Paperless*. macOS
+asks once whether PDF MRC may send notifications; without permission the app falls back to plain notifications.
+When everything is done, the symbol disappears and the app quits (unless its window is open).
 
 **Paperless:** address of your Paperless-ngx server and API token (in Paperless under *My Profile*), *Save and test
 connection*, and two more Quick Actions:
@@ -47,8 +53,9 @@ connection*, and two more Quick Actions:
   nothing is converted twice.
 
 The file on your Mac stays unchanged in both cases. The app uploads via `/api/documents/post_document/`, waits up to
-three minutes for the result (`/api/tasks/`) and reports it as a notification: created document (with number),
-duplicate or error. Connection and token are checked before uploading.
+ten minutes for Paperless to finish (`/api/tasks/`) and reports the result as a notification: added document (with
+number), duplicate or error. Connection and token are checked before uploading. Most of the time is usually spent on the
+server (paperless-mrc and Paperless's own processing); the history shows how long each step took.
 
 - The token is stored in the macOS keychain. After an update macOS asks once whether the app may still access it
   (*Always Allow*) – the app is ad-hoc signed, so each version has a new signature.
@@ -61,7 +68,14 @@ in the language field of the settings – the app shows missing languages and do
 [tessdata_fast](https://github.com/tesseract-ocr/tessdata_fast) with *Download*. They are stored in
 `~/Library/Application Support/mac-pdf-mrc/tessdata`.
 
-The interface follows the system language (German or English; other languages → English).
+**History:** the last 50 conversions – manual, from the context menu and sent to Paperless – with result, sizes,
+number of pages, the duration of each step (compression, upload, Paperless processing) and the full paperless-mrc log
+with the details of every page (photo pages skipped, pages rotated or deskewed, blank pages removed). *Show in Finder*,
+*Open in Paperless* and *Copy Log* for each entry; *Clear History…* removes all entries.
+
+**Language:** English or German, chosen under *Settings* (*System language*: German if your Mac uses German, otherwise
+English). It also applies to the Quick Action names in the Finder and to the paperless-mrc log; macOS loads the
+language when the app starts, so the app offers *Restart Now* after a change.
 
 ### Settings (per profile; *Restore defaults* resets them)
 

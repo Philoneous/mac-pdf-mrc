@@ -23,21 +23,28 @@ des Internet Archive nutzt. Was dabei genau passiert (nur gescannte Seiten, leer
 Voraussetzungen: macOS 13 oder neuer, Apple-Chip. Alles, was die App braucht (Python, paperless-mrc, Tesseract,
 OpenJPEG, jbig2enc, Poppler), steckt in der App – Homebrew ist nicht nötig.
 
-**Updates** installiert die App automatisch (Sparkle): Sie sucht beim Öffnen und danach alle vier Stunden, solange sie
-geöffnet ist, lädt neue Versionen im Hintergrund und installiert sie beim Beenden. Beim Umwandeln über das Kontextmenü
-wird nicht gesucht – die App also ab und zu öffnen. Im Reiter *Info* lässt sich *automatisch installieren*, *vor
-Installation fragen* oder *nur manuell* wählen und sofort suchen (auch *PDF MRC → Nach Updates suchen …*). Updates sind
-signiert (EdDSA) und werden vor der Installation geprüft. Der Reiter *Info* zeigt außerdem Version, Lizenz und die
-Lizenzen der mitgelieferten Komponenten.
+**Updates** installiert die App automatisch (Sparkle): Sie sucht beim Start – auch wenn eine Schnellaktion sie im
+Hintergrund startet – und alle vier Stunden, solange sie läuft, lädt neue Versionen im Hintergrund und installiert sie
+beim Beenden. Unter *Einstellungen* lässt sich *automatisch installieren*, *vor der Installation fragen* oder *nur
+manuell* wählen und sofort suchen (auch *PDF MRC → Nach Updates suchen …*). Updates sind signiert (EdDSA) und werden
+vor der Installation geprüft.
 
 ## Die App
+
+Die Seitenleiste links führt zu den Bereichen *Manuell umwandeln*, *Kontextmenü*, *Paperless*, *Verlauf*,
+*Einstellungen* und *Info*.
 
 **Manuell umwandeln:** PDF hineinziehen oder auswählen, Einstellungen anpassen, *Umwandeln*. Das Ergebnis und alle
 Meldungen von paperless-mrc erscheinen darunter, *Im Finder zeigen* öffnet die neue Datei.
 
 **Kontextmenü:** Schnellaktion *PDF komprimieren (MRC)* im Finder ein- und ausschalten und ihre Einstellungen
 festlegen (unabhängig von der manuellen Umwandlung; *Einstellungen aus „Manuell umwandeln“ übernehmen* kopiert sie
-herüber). Rechtsklick auf ein oder mehrere PDFs → *Schnellaktionen*. Das Ergebnis jeder Datei erscheint als Mitteilung.
+herüber). Rechtsklick auf ein oder mehrere PDFs → *Schnellaktionen*. Die Schnellaktion übergibt die Dateien an die App und ist
+sofort fertig; die App arbeitet im Hintergrund (ohne Dock-Symbol), zeigt währenddessen ein Symbol in der Menüleiste –
+ein Klick zeigt den Fortschritt jeder Datei und die letzten Ergebnisse – und meldet jedes Ergebnis als Mitteilung mit
+*Im Finder zeigen* / *In Paperless öffnen*. macOS fragt einmal, ob PDF MRC Mitteilungen senden darf; ohne Erlaubnis
+nutzt die App einfache Mitteilungen. Ist alles erledigt, verschwindet das Symbol und die App beendet sich (außer ihr
+Fenster ist offen).
 
 **Paperless:** Adresse des Paperless-ngx-Servers und API-Token (in Paperless unter *Mein Profil*), *Speichern und
 Verbindung testen*, dazu zwei weitere Schnellaktionen:
@@ -48,8 +55,10 @@ Verbindung testen*, dazu zwei weitere Schnellaktionen:
   eine solche Datei unverändert, es wird also nichts doppelt umgewandelt.
 
 Die Datei auf dem Mac bleibt in beiden Fällen unverändert. Die App lädt über `/api/documents/post_document/` hoch,
-wartet bis zu drei Minuten auf das Ergebnis (`/api/tasks/`) und meldet es als Mitteilung: angelegtes Dokument (mit
-Nummer), Duplikat oder Fehler. Verbindung und Token werden vor dem Hochladen geprüft.
+wartet bis zu zehn Minuten, bis Paperless fertig ist (`/api/tasks/`), und meldet das Ergebnis als Mitteilung:
+angelegtes Dokument (mit Nummer), Duplikat oder Fehler. Verbindung und Token werden vor dem Hochladen geprüft. Die meiste
+Zeit vergeht meist auf dem Server (paperless-mrc und die Verarbeitung in Paperless); der Verlauf zeigt, wie lange jeder
+Schritt gedauert hat.
 
 - Das Token liegt im macOS-Schlüsselbund. Nach einem Update fragt macOS einmal, ob die App weiter darauf zugreifen darf
   (*Immer erlauben*) – die App ist ad hoc signiert, jede Version hat also eine neue Signatur.
@@ -63,7 +72,16 @@ sich im Sprachfeld der Einstellungen eintragen – die App zeigt fehlende Sprach
 [tessdata_fast](https://github.com/tesseract-ocr/tessdata_fast). Sie liegen in
 `~/Library/Application Support/mac-pdf-mrc/tessdata`.
 
-Die Oberfläche folgt der Systemsprache (Deutsch oder Englisch; andere Sprachen → Englisch).
+**Verlauf:** die letzten 50 Umwandlungen – manuell, über das Kontextmenü und an Paperless gesendet – mit Ergebnis,
+Größen, Seitenzahl, Dauer jedes Schritts (Komprimieren, Hochladen, Verarbeitung in Paperless) und dem vollständigen
+Protokoll von paperless-mrc mit den Details jeder Seite (Fotoseiten übersprungen, Seiten gedreht oder begradigt, leere
+Seiten entfernt). Je Eintrag *Im Finder zeigen*, *In Paperless öffnen* und *Protokoll kopieren*; *Verlauf löschen …*
+entfernt alle Einträge.
+
+**Sprache:** Englisch oder Deutsch, unter *Einstellungen* wählbar (*Systemsprache*: Deutsch, wenn der Mac Deutsch
+verwendet, sonst Englisch). Sie gilt auch für die Namen der Schnellaktionen im Finder und das Protokoll von
+paperless-mrc; macOS lädt die Sprache beim Start der App, nach einem Wechsel bietet die App daher *Jetzt neu starten*
+an.
 
 ### Einstellungen (je Profil, *Standardwerte wiederherstellen* setzt sie zurück)
 
