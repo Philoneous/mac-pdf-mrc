@@ -169,8 +169,10 @@ struct SettingsPane: View {
     }
 }
 
-/// Bereich „About“: Version, Lizenz.
+/// Bereich „About“: Version, Unterstützen (Ko-fi), Lizenz.
 struct AboutView: View {
+    static let kofi = URL(string: "https://ko-fi.com/Philoneous")!
+
     private static func info(_ key: String) -> String {
         Bundle.main.object(forInfoDictionaryKey: key) as? String ?? "?"
     }
@@ -189,6 +191,19 @@ struct AboutView: View {
                     }
                 }
                 .padding(.vertical, 4)
+            }
+
+            Section("Support") {
+                HStack(alignment: .center, spacing: 12) {
+                    Text("PDF MRC is free. If it saves you time or storage, you can support its development with a small contribution.")
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                    Link(destination: Self.kofi) {
+                        Label("Support on Ko-fi", systemImage: "cup.and.saucer.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .help("Opens ko-fi.com/Philoneous in your browser. Payment by PayPal or card, no account needed. Contributions are voluntary and not tax-deductible donations.")
+                }
             }
 
             Section("License") {

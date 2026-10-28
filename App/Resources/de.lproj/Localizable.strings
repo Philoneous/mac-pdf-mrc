@@ -120,6 +120,7 @@
 "Only deskews if the best angle clearly stands out (factor over the median of all angles tested). Prevents logos or stamps on pages with little text from tilting a straight page. Default: 1.3." = "Begradigt nur, wenn sich der beste Winkel deutlich abhebt (Faktor gegenüber dem Median aller geprüften Winkel). Verhindert, dass Logos oder Stempel auf textarmen Seiten eine gerade Seite schief drehen. Standard: 1,3.";
 "Open in Paperless" = "In Paperless öffnen";
 "Open PDF MRC" = "PDF MRC öffnen";
+"Opens ko-fi.com/Philoneous in your browser. Payment by PayPal or card, no account needed. Contributions are voluntary and not tax-deductible donations." = "Öffnet ko-fi.com/Philoneous im Browser. Zahlung per PayPal oder Karte, ohne Konto. Beiträge sind freiwillig und keine steuerlich absetzbaren Spenden.";
 "Opens the folder with the license texts of the bundled components (Tesseract, Poppler, Sparkle and others)." = "Öffnet den Ordner mit den Lizenztexten der mitgelieferten Komponenten (Tesseract, Poppler, Sparkle u. a.).";
 "Output" = "Ausgabe";
 "Page selection" = "Seitenauswahl";
@@ -133,6 +134,7 @@
 "Paperless: duplicate of document #%lld – not added" = "Paperless: Duplikat von Dokument #%lld – nicht übernommen";
 "Paperless: duplicate – not added" = "Paperless: Duplikat – nicht übernommen";
 "PDF MRC is free software under the GNU Affero General Public License, version 3 or later (AGPL-3.0-or-later). It comes without any warranty." = "PDF MRC ist freie Software unter der GNU Affero General Public License, Version 3 oder später (AGPL-3.0-or-later). Sie wird ohne jede Gewährleistung bereitgestellt.";
+"PDF MRC is free. If it saves you time or storage, you can support its development with a small contribution." = "PDF MRC ist kostenlos. Wenn dir die App Zeit oder Speicherplatz spart, kannst du die Entwicklung mit einem kleinen Beitrag unterstützen.";
 "Photo below confident words" = "Foto unter sicher erkannten Wörtern";
 "Quality and size" = "Qualität und Größe";
 "Quick Action that compresses on the Mac first (settings from the “Context menu” tab) and sends the result – or the original if it cannot be made smaller. Useful with a slow server or a slow upload." = "Schnellaktion, die zuerst auf dem Mac komprimiert (Einstellungen aus dem Reiter „Kontextmenü“) und das Ergebnis sendet – oder das Original, wenn es sich nicht verkleinern lässt. Sinnvoll bei langsamem Server oder langsamem Upload.";
@@ -181,6 +183,8 @@
 "Some scanner software stores pages as thousands of vector elements instead of an image. Such pages (no image, no text) are rasterized, compressed and made searchable. Default: on." = "Manche Scanprogramme speichern Seiten als Tausende Vektorelemente statt als Bild. Solche Seiten (ohne Bild und Text) werden gerastert, komprimiert und durchsuchbar gemacht. Standard: an.";
 "Source code" = "Quellcode";
 "Straightens slightly skewed scans. Only pages without a kept text layer. Default: on." = "Begradigt leicht schräge Scans. Nur Seiten ohne übernommene Textebene. Standard: an.";
+"Support" = "Unterstützen";
+"Support on Ko-fi" = "Auf Ko-fi unterstützen";
 "System language" = "Systemsprache";
 "Tesseract language codes joined with +, e.g. deu+eng+fra. German and English are included; missing languages can be downloaded here. Default: deu+eng." = "Tesseract-Sprachkürzel, mit + verbunden, z. B. deu+eng+fra. Deutsch und Englisch sind enthalten; fehlende Sprachen lassen sich hier laden. Standard: deu+eng.";
 "Text check below paper area (%)" = "Texterkennung prüft unter Papierfläche (%)";

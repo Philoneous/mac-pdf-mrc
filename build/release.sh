@@ -49,10 +49,13 @@ python3 build/appcast.py --version "$VERSION" --build "$build_number" \
   echo "Bestehende Installationen aktualisieren sich automatisch."
   echo
   echo "**Install:** download \`PDF-MRC.dmg\`, open it, drag “PDF MRC” to Applications. On first launch: System"
-  echo "Settings → Privacy & Security → “Open Anyway” (the app is not notarised). Existing installations update themselves."
+  echo "Settings → Privacy & Security → “Open Anyway” (the app is not notarized). Existing installations update themselves."
   echo
   echo "### Änderungen / Changes"
   cat dist/notes.md
+  echo
+  echo "☕ PDF MRC ist kostenlos. Wer die Entwicklung unterstützen möchte: / PDF MRC is free. To support its development:"
+  echo "https://ko-fi.com/Philoneous"
 } > dist/release.md
 
 gh release create "$TAG" --target "$GITHUB_SHA" "$DMG" dist/appcast.xml --title "PDF MRC $VERSION" --notes-file dist/release.md

@@ -170,6 +170,13 @@ aus.
 Die App ruft paperless-mrc so auf wie Paperless: `DOCUMENT_WORKING_PATH` auf eine Kopie, Einstellungen über
 `PAPERLESS_OCR_*` und `MRC_*`, Ergebnis aus der maschinenlesbaren Zeile `paperless-mrc-result: {…}`.
 
+## Unterstützen
+
+PDF MRC ist kostenlos. Wenn dir die App Zeit oder Speicherplatz spart, kannst du die Entwicklung auf
+[Ko-fi](https://ko-fi.com/Philoneous) unterstützen (PayPal oder Karte, ohne Konto) – auch über den Knopf *Sponsor* auf
+GitHub oder *Info → Auf Ko-fi unterstützen* in der App. Beiträge sind freiwillig und keine steuerlich absetzbaren
+Spenden.
+
 ## Lizenz
 
 GNU Affero General Public License v3.0 oder später (`AGPL-3.0-or-later`), siehe [LICENSE](LICENSE) – wie paperless-mrc.
