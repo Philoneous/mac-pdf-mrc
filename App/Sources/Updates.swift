@@ -54,29 +54,81 @@ enum UpdateMode: String, CaseIterable, Identifiable {
     }
 }
 
-/// Reiter „Info“ (und Einstellungsfenster ⌘,): Version, Updates, Lizenz.
-struct InfoView: View {
+/// Sprache der Oberfläche (und der Protokolle von paperless-mrc). macOS lädt sie beim Start der App
+/// (AppleLanguages in den Einstellungen der App); ein Wechsel braucht daher einen Neustart.
+enum AppLanguage: String, CaseIterable, Identifiable {
+    case system, en, de
+    var id: String { rawValue }
+
+    static var current: AppLanguage {
+        get {
+            let domain = UserDefaults.standard.persistentDomain(forName: Bundle.main.bundleIdentifier ?? "")
+            switch (domain?["AppleLanguages"] as? [String])?.first?.prefix(2) {
+            case "de": return .de
+            case "en": return .en
+            default: return .system
+            }
+        }
+        set {
+            if newValue == .system {
+                UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+            } else {
+                UserDefaults.standard.set([newValue.rawValue], forKey: "AppleLanguages")
+            }
+        }
+    }
+
+    /// Sprache, mit der die App gerade läuft.
+    static var active: String { Bundle.main.preferredLocalizations.first ?? "en" }
+
+    /// App neu starten (neue Instanz nach dem Beenden öffnen).
+    @MainActor
+    static func relaunch() {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = ["-c", "sleep 1; /usr/bin/open \"$0\"", Bundle.main.bundlePath]
+        try? process.run()
+        NSApp.terminate(nil)
+    }
+}
+
+/// Bereich „Settings“ (und Einstellungsfenster ⌘,): Sprache, Updates.
+struct SettingsPane: View {
     @State private var mode = UpdateMode.current
+    @State private var language = AppLanguage.current
+    @ObservedObject private var jobs = JobCenter.shared
     static let repository = URL(string: "https://github.com/Philoneous/mac-pdf-mrc")!
 
-    private static func info(_ key: String) -> String {
-        Bundle.main.object(forInfoDictionaryKey: key) as? String ?? "?"
+    /// Gewählte Sprache weicht von der laufenden ab → Neustart anbieten.
+    private var needsRestart: Bool {
+        // Systemsprachen aus der globalen Domäne (Locale.preferredLanguages enthält bereits die Wahl der App)
+        let system = UserDefaults.standard.persistentDomain(forName: UserDefaults.globalDomain)?["AppleLanguages"]
+            as? [String] ?? ["en"]
+        let wanted = language == .system
+            ? (Bundle.preferredLocalizations(from: Bundle.main.localizations, forPreferences: system).first ?? "en")
+            : language.rawValue
+        return wanted != AppLanguage.active
     }
 
     var body: some View {
         Form {
-            Section {
-                HStack(spacing: 16) {
-                    Image(nsImage: NSApp.applicationIconImage)
-                        .resizable().frame(width: 72, height: 72)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(verbatim: "PDF MRC").font(.title2).bold()
-                        Text(L("Version %@ (build %@)", Self.info("CFBundleShortVersionString"), Self.info("CFBundleVersion")))
-                        Text(L("with paperless-mrc %@", Self.info("MRCPaperlessVersion")))
-                            .foregroundStyle(.secondary)
+            Section("Language") {
+                Picker("Language", selection: $language) {
+                    Text("System language").tag(AppLanguage.system)
+                    Text(verbatim: "English").tag(AppLanguage.en)
+                    Text(verbatim: "Deutsch").tag(AppLanguage.de)
+                }
+                .onChange(of: language) { AppLanguage.current = $0 }
+                .help("Language of the app, of the Quick Action names in the Finder and of the paperless-mrc log. System language: German if your Mac uses German, otherwise English.")
+                if needsRestart {
+                    HStack {
+                        Text("The new language is used after a restart.").foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Restart Now") { AppLanguage.relaunch() }
+                            .disabled(jobs.isBusy)
+                            .help("Quits PDF MRC and opens it again. Not possible while conversions are running.")
                     }
                 }
-                .padding(.vertical, 4)
             }
 
             Section("Updates") {
@@ -101,19 +153,49 @@ struct InfoView: View {
                         Spacer()
                         Link("Release notes", destination: Self.repository.appendingPathComponent("releases"))
                     }
-                    Text("The app checks when it opens and every four hours while it is open. Quick Actions in the Finder do not check. Automatically downloaded updates are installed when you quit the app.")
+                    Text("The app checks when it starts – also when a Quick Action starts it in the background – and every four hours while it is running. Automatically downloaded updates are installed when the app quits.")
                         .font(.footnote).foregroundStyle(.secondary)
                 } else {
                     Text("This installation was built with the Homebrew installer and is updated by running install.sh again.")
                         .foregroundStyle(.secondary)
                 }
             }
+        }
+        .formStyle(.grouped)
+        .onAppear {
+            mode = UpdateMode.current
+            language = AppLanguage.current
+        }
+    }
+}
+
+/// Bereich „About“: Version, Lizenz.
+struct AboutView: View {
+    private static func info(_ key: String) -> String {
+        Bundle.main.object(forInfoDictionaryKey: key) as? String ?? "?"
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                HStack(spacing: 16) {
+                    Image(nsImage: NSApp.applicationIconImage)
+                        .resizable().frame(width: 72, height: 72)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(verbatim: "PDF MRC").font(.title2).bold()
+                        Text(L("Version %@ (build %@)", Self.info("CFBundleShortVersionString"), Self.info("CFBundleVersion")))
+                        Text(L("with paperless-mrc %@", Self.info("MRCPaperlessVersion")))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
 
             Section("License") {
                 Text("PDF MRC is free software under the GNU Affero General Public License, version 3 or later (AGPL-3.0-or-later). It comes without any warranty.")
                 HStack {
                     Link("License text", destination: URL(string: "https://www.gnu.org/licenses/agpl-3.0.html")!)
-                    Link("Source code", destination: Self.repository)
+                    Link("Source code", destination: SettingsPane.repository)
                     Spacer()
                     if let licenses = Bundle.main.resourceURL?.appendingPathComponent("Licenses"),
                        FileManager.default.fileExists(atPath: licenses.path) {
@@ -126,7 +208,6 @@ struct InfoView: View {
             }
         }
         .formStyle(.grouped)
-        .onAppear { mode = UpdateMode.current }
     }
 }
 

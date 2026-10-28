@@ -3,24 +3,54 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var termination: DispatchSourceSignal?
+    /// Vom Kontextmenü im Hintergrund gestartet: ohne Fenster und Dock-Symbol, nur Menüleiste.
+    private let background = CommandLine.arguments.contains(JobQueue.backgroundFlag)
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        if background { NSApp.setActivationPolicy(.accessory) }
+        Notifier.setUp()  // früh, damit ein Klick auf eine Mitteilung ankommt, auch wenn er die App startet
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         QuickAction.setUp()
+        JobCenter.shared.start()
+        if background {
+            // SwiftUI öffnet beim Start immer ein Fenster – im Hintergrundmodus gleich wieder schließen
+            DispatchQueue.main.async {
+                NSApp.windows.filter { $0.styleMask.contains(.titled) }.forEach { $0.close() }
+            }
+        }
+        // Fenster zu, Aufträge laufen noch: kein Dock-Symbol mehr, nur die Menüleiste
+        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { _ in
+            Task { @MainActor in
+                if JobCenter.shared.isBusy && !AppWindows.anyVisible { NSApp.setActivationPolicy(.accessory) }
+            }
+        }
+        NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
+            Task { @MainActor in
+                if (note.object as? NSWindow)?.styleMask.contains(.titled) == true { NSApp.setActivationPolicy(.regular) }
+            }
+        }
         // SIGTERM (z. B. Abmelden per Skript) wie „Beenden“ behandeln, damit fertige Updates installiert werden
         signal(SIGTERM, SIG_IGN)
         termination = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
         termination?.setEventHandler { NSApp.terminate(nil) }
         termination?.resume()
     }
+
+    /// Letztes Fenster zu: beenden – außer es laufen noch Aufträge (dann beendet sich die App danach selbst).
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        !JobCenter.shared.isBusy
+    }
 }
 
 struct PDFMRCApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var store = SettingsStore()
+    @StateObject private var jobs = JobCenter.shared
 
     init() {
         #if SPARKLE
@@ -29,10 +59,10 @@ struct PDFMRCApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("PDF MRC") {
+        WindowGroup("PDF MRC", id: "main") {
             ContentView().environmentObject(store)
         }
-        .defaultSize(width: 580, height: 780)
+        .defaultSize(width: 800, height: 780)
         .windowResizability(.contentMinSize)
         .commands {
             if Updates.available {
@@ -42,32 +72,130 @@ struct PDFMRCApp: App {
             }
         }
 
+        // Symbol in der Menüleiste nur, solange Aufträge laufen (und kurz danach)
+        MenuBarExtra(isInserted: $jobs.menuBarVisible) {
+            JobsMenu()
+        } label: {
+            Image(systemName: jobs.isBusy ? "doc.zipper" : "checkmark.circle")
+        }
+        .menuBarExtraStyle(.window)
+
         Settings {
-            InfoView().frame(width: 520, height: 560)
+            SettingsPane().frame(width: 520, height: 520)
+        }
+    }
+}
+
+/// Bereiche der App in der Seitenleiste (immer sichtbar, auch bei schmalem Fenster).
+enum Pane: String, CaseIterable, Identifiable {
+    case umwandeln, kontextmenue, paperless, verlauf, einstellungen, info
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .umwandeln: return L("Convert manually")
+        case .kontextmenue: return L("Context menu")
+        case .paperless: return "Paperless"
+        case .verlauf: return L("History")
+        case .einstellungen: return L("Settings")
+        case .info: return L("About")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .umwandeln: return "doc.zipper"
+        case .kontextmenue: return "contextualmenu.and.cursorarrow"
+        case .paperless: return "tray.and.arrow.up"
+        case .verlauf: return "clock.arrow.circlepath"
+        case .einstellungen: return "gearshape"
+        case .info: return "info.circle"
         }
     }
 }
 
 struct ContentView: View {
-    @AppStorage("tab") private var tab = "umwandeln"
+    @AppStorage("tab") private var tab = Pane.umwandeln.rawValue
+
+    private var selection: Binding<Pane?> {
+        Binding(get: { Pane(rawValue: tab) ?? .umwandeln }, set: { if let pane = $0 { tab = pane.rawValue } })
+    }
 
     var body: some View {
-        TabView(selection: $tab) {
-            ConvertView()
-                .tabItem { Text("Convert manually") }
-                .tag("umwandeln")
-            ContextMenuView()
-                .tabItem { Text("Context menu") }
-                .tag("kontextmenue")
-            PaperlessView()
-                .tabItem { Text(verbatim: "Paperless") }
-                .tag("paperless")
-            InfoView()
-                .tabItem { Text("About") }
-                .tag("info")
+        HStack(spacing: 0) {
+            List(Pane.allCases, selection: selection) { pane in
+                Label(pane.title, systemImage: pane.symbol).tag(pane)
+            }
+            .listStyle(.sidebar)
+            .frame(width: 200)
+            Divider()
+            Group {
+                switch Pane(rawValue: tab) ?? .umwandeln {
+                case .umwandeln: ConvertView()
+                case .kontextmenue: ContextMenuView()
+                case .paperless: PaperlessView()
+                case .verlauf: HistoryView()
+                case .einstellungen: SettingsPane()
+                case .info: AboutView()
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+        .frame(minWidth: 760, idealWidth: 800, minHeight: 520, idealHeight: 780)
+    }
+}
+
+// MARK: - Menüleiste
+
+struct JobsMenu: View {
+    @ObservedObject private var center = JobCenter.shared
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(verbatim: "PDF MRC").font(.headline)
+            ForEach(center.jobs) { job in
+                HStack(spacing: 10) {
+                    ProgressView().controlSize(.small)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(job.file.lastPathComponent).lineLimit(1).truncationMode(.middle)
+                        Text(job.stage.title).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            if !center.finished.isEmpty {
+                if !center.jobs.isEmpty { Divider() }
+                ForEach(center.finished) { entry in
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: entry.status.symbol).foregroundStyle(entry.status.color)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(entry.fileName).lineLimit(1).truncationMode(.middle)
+                            Text(entry.message).font(.caption).foregroundStyle(.secondary).lineLimit(3)
+                        }
+                    }
+                }
+            }
+            Divider()
+            HStack {
+                Button("Show History") { open(.verlauf) }
+                Spacer()
+                Button("Open PDF MRC") { open(nil) }
+            }
         }
         .padding()
-        .frame(minWidth: 560, idealWidth: 580, minHeight: 520, idealHeight: 780)
+        .frame(width: 340)
+    }
+
+    private func open(_ pane: Pane?) {
+        if let pane { UserDefaults.standard.set(pane.rawValue, forKey: "tab") }
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        if let window = NSApp.windows.first(where: { $0.styleMask.contains(.titled) && $0.canBecomeMain }) {
+            window.makeKeyAndOrderFront(nil)
+        } else {
+            openWindow(id: "main")
+        }
     }
 }
 
@@ -77,8 +205,7 @@ struct ConvertView: View {
     @EnvironmentObject private var store: SettingsStore
     @State private var file: URL?
     @State private var running = false
-    @State private var result: Conversion?
-    @State private var failure: String?
+    @State private var result: HistoryEntry?
     @State private var choosing = false
     @State private var dropTargeted = false
 
@@ -97,14 +224,16 @@ struct ConvertView: View {
                 }
                 Spacer()
                 if let output = result?.output {
-                    Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([output]) }
+                    Button("Show in Finder") {
+                        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: output)])
+                    }
                 }
             }
-            if let failure {
-                Text(failure).foregroundStyle(.red)
-            }
             if let result {
-                Text(result.message).bold().textSelection(.enabled)
+                Text(result.message)
+                    .bold()
+                    .foregroundStyle(result.status == .failed ? Color.red : Color.primary)
+                    .textSelection(.enabled)
                 if !result.log.isEmpty {
                     ScrollView {
                         Text(result.log)
@@ -146,23 +275,19 @@ struct ConvertView: View {
     private func select(_ url: URL) {
         file = url
         result = nil
-        failure = nil
     }
 
     private func convert() {
         guard let file else { return }
-        let profile = store.settings.manual
+        let settings = store.settings
         running = true
         result = nil
-        failure = nil
         Task.detached {
-            let outcome = Result { try Converter.convert(file, with: profile) }
+            let entry = await JobRunner.run(.manual, file: file, settings: settings)
+            History.append(entry)
             await MainActor.run {
                 running = false
-                switch outcome {
-                case .success(let conversion): result = conversion
-                case .failure(let error): failure = error.localizedDescription
-                }
+                result = entry
             }
         }
     }

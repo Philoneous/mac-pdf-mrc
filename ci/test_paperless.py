@@ -55,8 +55,8 @@ def main() -> None:
     url = server.start()
 
     # Vorlagen der drei Schnellaktionen liegen in der App
-    for name, flag in (("Compress PDF (MRC)", "--kontextmenue"), ("Send to Paperless", "--paperless"),
-                       ("Compress and Send to Paperless", "--paperless-komprimiert")):
+    for name, flag in (("Compress PDF (MRC)", "--auftrag compress"), ("Send to Paperless", "--auftrag send"),
+                       ("Compress and Send to Paperless", "--auftrag compressAndSend")):
         with open(RESOURCES / f"{name}.workflow/Contents/document.wflow", "rb") as f:
             cmd = plistlib.load(f)["actions"][0]["action"]["ActionParameters"]["COMMAND_STRING"]
         assert cmd == f'"__APP_EXECUTABLE__" {flag} "$@"', cmd  # Pfad trägt die App beim Einrichten ein

@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import Foundation
 
-/// Startpunkt. Aufrufe aus den Finder-Schnellaktionen laufen ohne Oberfläche:
-///   --kontextmenue <PDFs…>          komprimieren (Kontextmenü-Profil)
-///   --paperless <PDFs…>             Original an Paperless senden
-///   --paperless-komprimiert <PDFs…> komprimieren (Kontextmenü-Profil) und an Paperless senden
+/// Startpunkt.
+///   --auftrag <Art> <PDFs…>          Finder-Schnellaktion: Auftrag an die App übergeben (startet sie bei Bedarf im
+///                                    Hintergrund) und sofort enden; Art: compress, send, compressAndSend
+///   --kontextmenue <PDFs…>          direkt komprimieren (Kontextmenü-Profil), Ergebnis auf der Konsole
+///   --paperless <PDFs…>             direkt: Original an Paperless senden
+///   --paperless-komprimiert <PDFs…> direkt: komprimieren (Kontextmenü-Profil) und an Paperless senden
 ///   --paperless-token               API-Token von der Standardeingabe in den Schlüsselbund (für Skripte)
 ///   --schnellaktionen-einrichten    Schnellaktionen einrichten/aktualisieren (wie beim Start der App)
 ///   --sprachen-laden <Kürzel…>      Tesseract-Sprachen nachladen (eigenständige App), z. B. fra pol
-/// Ohne diese Argumente startet die App.
+/// Ohne diese Argumente (oder mit --hintergrund) startet die App.
 @main
 enum Main {
     @MainActor
@@ -16,134 +18,55 @@ enum Main {
         let args = Array(CommandLine.arguments.dropFirst())
         let files = Array(args.dropFirst())
         switch args.first {
-        case "--kontextmenue": ContextMenuRun.run(files)
-        case "--paperless": PaperlessRun.run(files, compress: false)
-        case "--paperless-komprimiert": PaperlessRun.run(files, compress: true)
+        case "--auftrag":
+            guard let kind = args.dropFirst().first.flatMap(JobKind.init(rawValue:)) else { fail("unknown job") }
+            let paths = Array(args.dropFirst(2))
+            do {
+                try JobQueue.submit(kind, files: paths)
+            } catch {
+                // App ließ sich nicht starten: dann eben hier und jetzt (nichts geht verloren)
+                Direct.run(kind, paths)
+            }
+        case "--kontextmenue": Direct.run(.compress, files)
+        case "--paperless": Direct.run(.send, files)
+        case "--paperless-komprimiert": Direct.run(.compressAndSend, files)
         case "--schnellaktionen-einrichten": QuickAction.setUp()
         case "--sprachen-laden":
             for code in files {
                 do {
-                    try PaperlessRun.blocking { try await Languages.download(code) }
+                    try Direct.blocking { try await Languages.download(code) }
                     print(L("Language “%@” installed", code))
                 } catch {
-                    FileHandle.standardError.write(Data((L("Error: %@", error.localizedDescription) + "\n").utf8))
-                    exit(1)
+                    fail(L("Error: %@", error.localizedDescription))
                 }
             }
         case "--paperless-token":
             do {
                 try PaperlessToken.save(readLine(strippingNewline: true) ?? "")
             } catch {
-                FileHandle.standardError.write(Data((L("Error: %@", error.localizedDescription) + "\n").utf8))
-                exit(1)
+                fail(L("Error: %@", error.localizedDescription))
             }
         default: PDFMRCApp.main()
         }
     }
-}
 
-enum ContextMenuRun {
-    /// Wandelt alle PDFs mit dem Kontextmenü-Profil um und meldet jedes Ergebnis als Mitteilung.
-    static func run(_ paths: [String]) {
-        let profile = AppSettings.load().quickAction
-        for path in paths {
-            let src = URL(fileURLWithPath: path)
-            let text: String
-            do {
-                text = try Converter.convert(src, with: profile).message
-            } catch {
-                text = L("Error: %@", error.localizedDescription)
-            }
-            report(src, text)
-        }
-    }
-
-    /// Ergebnis ausgeben und als Mitteilung anzeigen.
-    static func report(_ src: URL, _ text: String) {
-        print("\(src.lastPathComponent): \(text)")
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        process.arguments = ["-e", "on run argv",
-                             "-e", "display notification (item 2 of argv) with title (item 1 of argv)",
-                             "-e", "end run", src.lastPathComponent, text]
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {}  // Mitteilung ist nur Komfort
+    private static func fail(_ message: String) -> Never {
+        FileHandle.standardError.write(Data((message + "\n").utf8))
+        exit(1)
     }
 }
 
-enum PaperlessRun {
-    static let waitLimit: TimeInterval = 180  // so lange auf das Ergebnis von Paperless warten
-
-    /// Lädt alle PDFs hoch (optional vorher komprimiert, die Datei auf dem Mac bleibt unverändert) und meldet,
-    /// was Paperless daraus gemacht hat.
-    static func run(_ paths: [String], compress: Bool) {
+/// Aufträge ohne App-Oberfläche: Ergebnis auf der Konsole, im Verlauf und als Mitteilung (osascript).
+enum Direct {
+    static func run(_ kind: JobKind, _ paths: [String]) {
         let settings = AppSettings.load()
-        let client: PaperlessClient
-        do {
-            client = try PaperlessClient.configured(settings)
-            // Verbindung und Token vorab prüfen: klare Meldung statt abgebrochenem Upload, keine Daten umsonst
-            try blocking { try await client.check() }
-        } catch {
-            paths.forEach { ContextMenuRun.report(URL(fileURLWithPath: $0), L("Error: %@", error.localizedDescription)) }
-            return
-        }
-
-        // 1. hochladen
-        var pending: [(src: URL, task: String, note: String)] = []
         for path in paths {
             let src = URL(fileURLWithPath: path)
-            var copy: Converter.CompressedCopy?
-            defer {
-                if let copy { try? FileManager.default.removeItem(at: copy.directory) }
-            }
-            do {
-                var file = src
-                var note = ""
-                if compress {
-                    let compressed = try Converter.compressCopy(src, with: settings.quickAction)
-                    copy = compressed
-                    if compressed.changed {
-                        file = compressed.file
-                        note = L("Compressed (%@). ", compressed.message)
-                    } else {
-                        note = L("Not compressed (%@), original sent. ", compressed.message)
-                    }
-                }
-                let task = try blocking { try await client.upload(file, filename: src.lastPathComponent) }
-                pending.append((src, task, note))
-            } catch {
-                ContextMenuRun.report(src, L("Error: %@", error.localizedDescription))
-            }
-        }
-
-        // 2. auf Paperless warten
-        let deadline = Date().addingTimeInterval(waitLimit)
-        while !pending.isEmpty {
-            pending = pending.filter { item in
-                let state = (try? blocking { try await client.state(of: item.task) }) ?? .running
-                switch state {
-                case .running:
-                    return true
-                case .created(let id):
-                    ContextMenuRun.report(item.src, item.note + (id.map { L("Added to Paperless (document #%lld)", $0) } ?? L("Added to Paperless")))
-                case .duplicate(let id):
-                    ContextMenuRun.report(item.src, item.note + (id.map { L("Paperless: duplicate of document #%lld – not added", $0) }
-                                                       ?? L("Paperless: duplicate – not added")))
-                case .failed(let message):
-                    ContextMenuRun.report(item.src, item.note + L("Paperless error: %@", message))
-                }
-                return false
-            }
-            if pending.isEmpty { break }
-            if Date() > deadline {
-                pending.forEach {
-                    ContextMenuRun.report($0.src, $0.note + L("Uploaded; Paperless is still processing – check the result there"))
-                }
-                break
-            }
-            Thread.sleep(forTimeInterval: 2)
+            let entry = (try? blocking { await JobRunner.run(kind, file: src, settings: settings) })
+                ?? HistoryEntry(kind: kind, source: path, status: .failed)
+            print("\(src.lastPathComponent): \(entry.message)")
+            History.append(entry)
+            Notifier.legacy(title: src.lastPathComponent, text: entry.message)
         }
     }
 

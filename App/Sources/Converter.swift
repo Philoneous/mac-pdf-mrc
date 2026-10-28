@@ -1,10 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import Foundation
 
+/// Kennzahlen aus der maschinenlesbaren Ergebniszeile von paperless-mrc.
+struct MRCResult {
+    var compressed = false
+    var sizeBefore: Int?
+    var sizeAfter: Int?
+    var pages: Int?
+
+    init(_ json: [String: Any]?) {
+        guard let json else { return }
+        func n(_ key: String) -> Int? { (json[key] as? NSNumber)?.intValue }
+        compressed = json["status"] as? String == "compressed"
+        sizeBefore = n("size_before")
+        sizeAfter = n("size_after")
+        pages = n("pages")
+    }
+}
+
 struct Conversion {
     let message: String  // Ergebniszeile von paperless-mrc
     let log: String      // alle Meldungen von paperless-mrc
     let output: URL?     // nil: keine Datei erzeugt (nicht verkleinerbar, Fehler, übersprungen)
+    var result = MRCResult(nil)
 }
 
 enum ConversionError: LocalizedError {
@@ -71,6 +89,7 @@ enum Converter {
         let message: String
         let log: String
         let changed: Bool
+        let result: MRCResult
     }
 
     static func compressCopy(_ src: URL, with profile: Profile) throws -> CompressedCopy {
@@ -95,10 +114,11 @@ enum Converter {
             let lines = output.filter { $0.hasPrefix(prefix) }.map { String($0.dropFirst(prefix.count)) }
             // Ergebnis aus der maschinenlesbaren Zeile (übersetzbar); ältere paperless-mrc: letzte Meldung
             var message: String
-            if let line = output.last(where: { $0.hasPrefix(resultPrefix) }),
-               let result = try? JSONSerialization.jsonObject(with: Data(line.dropFirst(resultPrefix.count).utf8))
-                   as? [String: Any] {
-                message = describeResult(result)
+            let json = output.last(where: { $0.hasPrefix(resultPrefix) }).flatMap {
+                try? JSONSerialization.jsonObject(with: Data($0.dropFirst(resultPrefix.count).utf8)) as? [String: Any]
+            }
+            if let json {
+                message = describeResult(json)
             } else {
                 message = lines.last ?? L("No response from paperless-mrc")
                 if message.hasPrefix(src.lastPathComponent + ": ") {
@@ -107,7 +127,8 @@ enum Converter {
             }
             return CompressedCopy(directory: workDir, file: work, message: message,
                                   log: lines.joined(separator: "\n"),
-                                  changed: !fm.contentsEqual(atPath: src.path, andPath: work.path))
+                                  changed: !fm.contentsEqual(atPath: src.path, andPath: work.path),
+                                  result: MRCResult(json))
         } catch {
             try? fm.removeItem(at: workDir)
             throw error
@@ -133,7 +154,7 @@ enum Converter {
         let log = copy.log
 
         if !copy.changed {
-            return Conversion(message: message, log: log, output: nil)
+            return Conversion(message: message, log: log, output: nil, result: copy.result)
         }
         if profile.output == .replace {
             // Ergebnis erst neben das Original legen; schlägt der Papierkorb fehl, bleibt das Original
@@ -149,7 +170,7 @@ enum Converter {
         } else {
             try fm.moveItem(at: work, to: dest)
         }
-        return Conversion(message: message, log: log, output: dest)
+        return Conversion(message: message, log: log, output: dest, result: copy.result)
     }
 
     private static func run(_ runtime: Runtime, on work: URL, with profile: Profile) throws -> String {
@@ -162,6 +183,9 @@ enum Converter {
         env.merge(runtime.environment) { $1 }
         env.merge(profile.environment) { $1 }
         env["DOCUMENT_WORKING_PATH"] = work.path
+        // Protokoll in der Sprache der App, mit Zeiten je Schritt (für den Verlauf)
+        env["MRC_LANGUAGE"] = Bundle.main.preferredLocalizations.first == "de" ? "de" : "en"
+        env["MRC_TIMING"] = "true"
         env["PATH"] = runtime.path.joined(separator: ":")
         process.environment = env
         let pipe = Pipe()

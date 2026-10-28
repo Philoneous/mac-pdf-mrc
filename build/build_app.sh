@@ -481,9 +481,10 @@ cat > "$template/Contents/document.wflow" <<EOF
 EOF
 plutil -lint -s "$template/Contents/Info.plist" "$template/Contents/document.wflow" || die "Workflow $name ungültig."
 }
-write_workflow "$NAME" --kontextmenue
-write_workflow "$NAME_SEND" --paperless
-write_workflow "$NAME_SEND_MRC" --paperless-komprimiert
+# Die Schnellaktion übergibt nur an die App (Menüleiste, Mitteilungen, Verlauf) und endet sofort
+write_workflow "$NAME" "--auftrag compress"
+write_workflow "$NAME_SEND" "--auftrag send"
+write_workflow "$NAME_SEND_MRC" "--auftrag compressAndSend"
 plutil -lint -s "$C/Info.plist" || die "Info.plist der App ungültig."
 
 # ---- Signieren (ad hoc) und prüfen -------------------------------------------------------------------

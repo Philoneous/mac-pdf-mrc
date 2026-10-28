@@ -22,4 +22,6 @@ shot() {
 shot umwandeln
 shot kontextmenue
 shot paperless
+shot verlauf
+shot einstellungen
 shot info

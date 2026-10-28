@@ -13,6 +13,7 @@ import plistlib
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -23,6 +24,7 @@ HOME = Path.home()
 APP = Path(os.environ.get("MRC_APP", HOME / "Applications/PDF MRC.app"))  # DMG-Test: /Applications
 BIN = APP / "Contents/MacOS/pdf-mrc"
 SETTINGS = HOME / "Library/Application Support/mac-pdf-mrc/settings.json"
+HISTORY = HOME / "Library/Application Support/mac-pdf-mrc/history.json"
 WORKFLOW = HOME / "Library/Services/Compress PDF (MRC).workflow"
 LETTER = ["Stadtwerke Musterstadt GmbH", "Jahresabrechnung 2025 fuer Wasser und Waerme",
           "Sehr geehrte Damen und Herren,", "der Betrag von 1.284,50 EUR wird zum 1. Dezember faellig."]
@@ -88,7 +90,7 @@ def main() -> None:
     # Schnellaktion ist eingerichtet und ruft die App auf
     with open(WORKFLOW / "Contents/document.wflow", "rb") as f:
         cmd = plistlib.load(f)["actions"][0]["action"]["ActionParameters"]["COMMAND_STRING"]
-    assert f'"{BIN}" --kontextmenue "$@"' == cmd, cmd
+    assert f'"{BIN}" --auftrag compress "$@"' == cmd, cmd
     with open(WORKFLOW / "Contents/Info.plist", "rb") as f:
         title = plistlib.load(f)["NSServices"][0]["NSMenuItem"]["default"]
     assert title == "Compress PDF (MRC)", title  # Runner: Systemsprache Englisch
@@ -187,6 +189,42 @@ def main() -> None:
     finally:
         subprocess.run(["defaults", "delete", "io.github.philoneous.mac-pdf-mrc", "AppleLanguages"], check=False)
     print("ok: deutsche Meldungen")
+
+    # Verlauf: jede Umwandlung mit Ergebnis und Protokoll (inkl. Zeiten), höchstens 50 Einträge
+    history = json.loads(HISTORY.read_text())
+    assert 0 < len(history) <= 50, len(history)
+    latest = history[0]
+    assert latest["kind"] == "compress" and latest["status"] == "done", latest
+    assert latest["source"].endswith("deutsch.pdf") and latest["sizeAfter"] < latest["sizeBefore"], latest
+    assert "Zeit" in latest["log"] and latest["timings"][0]["step"] == "compress", latest
+    print("ok: Verlauf")
+
+    # Schnellaktion: Übergabe an die App im Hintergrund – Aufruf endet sofort, die App wandelt um, schreibt den
+    # Verlauf und beendet sich danach selbst
+    SETTINGS.write_text(json.dumps({"manual": profile(), "quickAction": profile()}))
+    handed = write_scan(tmp / "uebergabe.pdf", [scan_image(rng)])
+    start = time.time()
+    res = subprocess.run([str(BIN), "--auftrag", "compress", str(handed)], capture_output=True, text=True, timeout=60)
+    assert res.returncode == 0, res
+    assert time.time() - start < 20, time.time() - start
+    result = tmp / "uebergabe (komprimiert).pdf"
+    deadline = time.time() + 300
+    while not result.exists() and time.time() < deadline:
+        time.sleep(2)
+    assert result.exists(), sorted(p.name for p in tmp.iterdir())
+    deadline = time.time() + 30
+    while json.loads(HISTORY.read_text())[0]["source"] != str(handed) and time.time() < deadline:
+        time.sleep(1)
+    assert json.loads(HISTORY.read_text())[0]["source"] == str(handed)
+    deadline = time.time() + 60  # 8 s Anzeige in der Menüleiste, dann Ende
+    while app_running() and time.time() < deadline:
+        time.sleep(2)
+    assert not app_running(), "App läuft nach dem Auftrag weiter"
+    print("ok: Übergabe an die App")
+
+
+def app_running() -> bool:
+    return subprocess.run(["pgrep", "-f", f"{BIN} --hintergrund"], capture_output=True).returncode == 0
 
 
 if __name__ == "__main__":
