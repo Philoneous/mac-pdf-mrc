@@ -62,6 +62,8 @@ defaults write "$ID" SUEnableAutomaticChecks -bool true
 defaults write "$ID" SUAutomaticallyUpdate -bool true
 defaults write "$ID" SULastCheckTime -date "2020-01-01 00:00:00 +0000"
 defaults write "$ID" tab umwandeln  # nicht im Paperless-Reiter starten (Schlüsselbund-Abfrage nach Neusignieren)
+# Server braucht beim ersten Start (Python-Import) einige Sekunden
+for _ in $(seq 1 30); do curl -fsS -o /dev/null "http://127.0.0.1:$PORT/appcast.xml" 2>/dev/null && break; sleep 1; done
 curl -fsS -o /dev/null "http://127.0.0.1:$PORT/appcast.xml" || { echo "Testserver nicht erreichbar"; cat "$W/server.log"; exit 1; }
 open "$APP"
 
