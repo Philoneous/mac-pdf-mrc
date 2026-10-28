@@ -11,6 +11,7 @@ Löst @rpath, @loader_path und @executable_path anhand der Originaldateien auf. 
 Bibliothek nicht gefunden wird (statt wie dylibbundler interaktiv nachzufragen).
 """
 
+import json
 import os
 import shutil
 import subprocess
@@ -74,13 +75,35 @@ def copy_licenses(sources: list[Path], target: Path) -> None:
             kegs[parts[i + 1]] = Path(*parts[: i + 3])
     missing = []
     for name, keg in sorted(kegs.items()):
-        files = [f for f in keg.iterdir() if f.is_file() and f.name.upper().startswith(LICENSE_PREFIXES)]
-        if not files:
+        # Lizenzdateien im Keg-Hauptordner (z. B. leptonica-license.txt) und Ordner LICENSES (REUSE, z. B. glib)
+        files = [f for f in keg.iterdir() if f.is_file() and
+                 (f.name.upper().startswith(LICENSE_PREFIXES) or "LICENSE" in f.name.upper())]
+        dest = target / name
+        if (keg / "LICENSES").is_dir():
+            shutil.copytree(keg / "LICENSES", dest / "LICENSES", dirs_exist_ok=True)
+            files = files or [None]
+        for f in files:
+            if f is not None:
+                dest.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, dest / f.name)
+        if files:
+            continue
+        # Kein Lizenztext im Paket: Lizenz (SPDX) und Projektseite aus den Homebrew-Metadaten vermerken
+        try:
+            meta = json.loads(run("brew", "info", "--json=v2", name))["formulae"][0]
+        except (subprocess.CalledProcessError, KeyError, IndexError, ValueError):
             missing.append(name)
             continue
-        (target / name).mkdir(parents=True, exist_ok=True)
-        for f in files:
-            shutil.copy2(f, target / name / f.name)
+        dest.mkdir(parents=True, exist_ok=True)
+        spdx = meta.get("license") or "?"
+        spdx = spdx if isinstance(spdx, str) else json.dumps(spdx)  # zusammengesetzte Lizenzen kommen als Objekt
+        (dest / "LICENSE.txt").write_text(
+            f"{name} {meta.get('versions', {}).get('stable', '')}\n"
+            f"Licence (SPDX): {spdx}\n"
+            f"Licence text: https://spdx.org/licenses/ (search for the identifier above)\n"
+            f"Project / source code: {meta.get('homepage', '')}\n"
+            f"Source archive: {meta.get('urls', {}).get('stable', {}).get('url', '')}\n", encoding="utf-8")
+        print(f"  {name}: kein Lizenztext im Paket, Verweis auf {spdx} angelegt")
     print(f"[OK] Lizenzen von {len(kegs) - len(missing)} Paketen nach {target}")
     if missing:
         print(f"::warning title=Lizenzen::Keine Lizenzdatei im Paket: {', '.join(missing)}")
