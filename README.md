@@ -132,7 +132,8 @@ every push to `main`, two jobs in parallel:
 `ci/check_strings.py` checks that every text has an English translation. If a step fails, its last output lines are
 attached to the run as an annotation; on a manual run the screenshots are also pushed to the branch `ci-screenshots`.
 
-**Releases:** push a tag `vX.Y.Z` on `main`. The workflow builds and tests as above, then `build/release.sh` signs the
+**Releases:** *Actions → macOS → Run workflow* on `main` with a version (e.g. `1.0.0`), or push a tag `vX.Y.Z`.
+The workflow builds and tests as above, then `build/release.sh` signs the
 DMG for Sparkle (repository secret `SPARKLE_PRIVATE_KEY`, checked against `SUPublicEDKey` in the app), writes
 `appcast.xml` and creates the GitHub release. Installed apps find it via
 `https://github.com/Philoneous/mac-pdf-mrc/releases/latest/download/appcast.xml`. A normal push does not trigger an

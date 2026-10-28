@@ -136,7 +136,8 @@ jedem Push auf `main`, zwei Jobs parallel:
 letzten Ausgabezeilen als Annotation am Lauf; bei manuellem Start landen zusätzlich die Bildschirmfotos im Branch
 `ci-screenshots`.
 
-**Releases:** Tag `vX.Y.Z` auf `main` pushen. Der Workflow baut und testet wie oben, danach signiert `build/release.sh`
+**Releases:** *Actions → macOS → Run workflow* auf `main` mit einer Version (z. B. `1.0.0`) starten oder ein Tag
+`vX.Y.Z` pushen. Der Workflow baut und testet wie oben, danach signiert `build/release.sh`
 das DMG für Sparkle (Repository-Secret `SPARKLE_PRIVATE_KEY`, geprüft gegen `SUPublicEDKey` in der App), schreibt
 `appcast.xml` und legt das GitHub-Release an. Installierte Apps finden es über
 `https://github.com/Philoneous/mac-pdf-mrc/releases/latest/download/appcast.xml`. Ein normaler Push löst kein Update

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # =============================================================================
-#  Veröffentlicht ein Release (nur in GitHub Actions bei einem Tag v*): signiert das DMG für Sparkle,
+#  Veröffentlicht ein Release (nur in GitHub Actions: Tag v* gepusht oder manueller Start mit Version): signiert das DMG für Sparkle,
 #  schreibt appcast.xml und legt das GitHub-Release mit DMG und Feed an.
 #
-#  Umgebung: GITHUB_REF_NAME (Tag), GITHUB_REPOSITORY, GH_TOKEN, SPARKLE_PRIVATE_KEY (Repository-Secret)
+#  Umgebung: RELEASE_TAG (manueller Start) oder GITHUB_REF_NAME (gepushtes Tag), GITHUB_SHA, GITHUB_REPOSITORY, GH_TOKEN, SPARKLE_PRIVATE_KEY (Repository-Secret)
 # =============================================================================
 set -Eeuo pipefail
 trap 'echo "[FEHLER] ${BASH_SOURCE[0]##*/} Zeile $LINENO: $BASH_COMMAND (Exit $?)" >&2' ERR
@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 
 die() { printf '[FEHLER] %s\n' "$*" >&2; exit 1; }
 
-TAG="${GITHUB_REF_NAME:?Tag fehlt}"
+TAG="${RELEASE_TAG:-${GITHUB_REF_NAME:?Tag fehlt}}"
 VERSION="${TAG#v}"
 DMG="dist/PDF-MRC.dmg"
 APP="dist/PDF MRC.app"
@@ -55,5 +55,5 @@ python3 build/appcast.py --version "$VERSION" --build "$build_number" \
   cat dist/notes.md
 } > dist/release.md
 
-gh release create "$TAG" "$DMG" dist/appcast.xml --title "PDF MRC $VERSION" --notes-file dist/release.md
+gh release create "$TAG" --target "$GITHUB_SHA" "$DMG" dist/appcast.xml --title "PDF MRC $VERSION" --notes-file dist/release.md
 echo "[OK] Release $TAG veröffentlicht (Build $build_number)"
