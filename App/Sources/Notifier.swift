@@ -78,10 +78,9 @@ enum Notifier {
         process.arguments = ["-e", "on run argv",
                              "-e", "display notification (item 2 of argv) with title (item 1 of argv)",
                              "-e", "end run", title, text]
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {}  // Mitteilung ist nur Komfort
+        // nicht auf das Ende warten: waitUntilExit hängt in einer Aufgabe der App (kein laufender Run Loop),
+        // und osascript beendet sich ohnehin selbst
+        try? process.run()  // Mitteilung ist nur Komfort
     }
 
     /// Führt nur den ersten Aufruf aus (Antwort oder Zeitgrenze).
