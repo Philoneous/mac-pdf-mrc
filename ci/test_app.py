@@ -219,6 +219,9 @@ def main() -> None:
     deadline = time.time() + 60  # 8 s Anzeige in der Menüleiste, dann Ende
     while app_running() and time.time() < deadline:
         time.sleep(2)
+    if app_running():
+        print(subprocess.run(["log", "show", "--last", "10m", "--predicate", 'eventMessage CONTAINS "PDFMRC"'],
+                             capture_output=True, text=True).stdout[-3000:])
     assert not app_running(), "App läuft nach dem Auftrag weiter"
     print("ok: Übergabe an die App")
 

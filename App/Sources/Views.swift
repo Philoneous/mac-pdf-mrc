@@ -18,10 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         QuickAction.setUp()
         JobCenter.shared.start()
         if background {
-            // SwiftUI öffnet beim Start immer ein Fenster – im Hintergrundmodus gleich wieder schließen
-            DispatchQueue.main.async {
-                NSApp.windows.filter { $0.styleMask.contains(.titled) }.forEach { $0.close() }
-            }
+            // SwiftUI öffnet beim Start immer ein Fenster – im Hintergrundmodus schließt ContentView es beim Erscheinen
+            AppWindows.suppressLaunchWindow = true
+            DispatchQueue.main.async { AppWindows.main.forEach { $0.close() } }
         }
         // Fenster zu, Aufträge laufen noch: kein Dock-Symbol mehr, nur die Menüleiste
         NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { _ in
@@ -31,7 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         NotificationCenter.default.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
             Task { @MainActor in
-                if (note.object as? NSWindow)?.styleMask.contains(.titled) == true { NSApp.setActivationPolicy(.regular) }
+                if let window = note.object as? NSWindow, AppWindows.main.contains(window) { NSApp.setActivationPolicy(.regular) }
             }
         }
         // SIGTERM (z. B. Abmelden per Skript) wie „Beenden“ behandeln, damit fertige Updates installiert werden
@@ -143,6 +142,11 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .frame(minWidth: 760, idealWidth: 800, minHeight: 520, idealHeight: 780)
+        .onAppear {
+            guard AppWindows.suppressLaunchWindow else { return }
+            AppWindows.suppressLaunchWindow = false
+            DispatchQueue.main.async { AppWindows.main.forEach { $0.close() } }
+        }
     }
 }
 
@@ -191,7 +195,8 @@ struct JobsMenu: View {
         if let pane { UserDefaults.standard.set(pane.rawValue, forKey: "tab") }
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
-        if let window = NSApp.windows.first(where: { $0.styleMask.contains(.titled) && $0.canBecomeMain }) {
+        AppWindows.suppressLaunchWindow = false
+        if let window = AppWindows.main.first {
             window.makeKeyAndOrderFront(nil)
         } else {
             openWindow(id: "main")

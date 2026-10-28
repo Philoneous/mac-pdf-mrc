@@ -310,6 +310,7 @@ final class JobCenter: ObservableObject {
                 let center = JobCenter.shared
                 guard center.jobs.isEmpty else { return }
                 center.menuBarVisible = false
+                NSLog("PDFMRC idle; windows: %@", NSApp.windows.map { "\(type(of: $0)) visible=\($0.isVisible) main=\($0.canBecomeMain)" }.joined(separator: ", "))
                 if !AppWindows.anyVisible {
                     NSApp.terminate(nil)
                 }
@@ -321,16 +322,22 @@ final class JobCenter: ObservableObject {
 /// Fenster der App (ohne Menüleisten-Fenster).
 @MainActor
 enum AppWindows {
-    static var anyVisible: Bool {
-        NSApp.windows.contains { $0.isVisible && $0.styleMask.contains(.titled) }
+    /// Im Hintergrund gestartet: das Fenster, das SwiftUI beim Start anlegt, gleich wieder schließen.
+    static var suppressLaunchWindow = false
+
+    /// Hauptfenster (kein Menüleisten-Fenster, das ist ein Panel).
+    static var main: [NSWindow] {
+        NSApp.windows.filter { $0.canBecomeMain && !($0 is NSPanel) && $0.styleMask.contains(.titled) }
     }
+
+    static var anyVisible: Bool { main.contains { $0.isVisible } }
 
     /// Hauptfenster zeigen (aus Menüleiste oder Mitteilung); die App erscheint dann auch im Dock.
     static func showMain(tab: String? = nil) {
         if let tab { UserDefaults.standard.set(tab, forKey: "tab") }
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
-        if let window = NSApp.windows.first(where: { $0.styleMask.contains(.titled) && $0.canBecomeMain }) {
+        if let window = main.first {
             window.makeKeyAndOrderFront(nil)
         } else {
             // Die App „erneut öffnen“: SwiftUI legt dann ein neues Fenster der WindowGroup an
