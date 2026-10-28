@@ -10,6 +10,7 @@ import io
 import json
 import os
 import plistlib
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -92,6 +93,26 @@ def main() -> None:
         title = plistlib.load(f)["NSServices"][0]["NSMenuItem"]["default"]
     assert title == "Compress PDF (MRC)", title  # Runner: Systemsprache Englisch
     print("ok: Schnellaktion eingerichtet")
+
+    # Update von ≤ 1.0.1: deutsch benannte Schnellaktion wird durch die englisch benannte ersetzt (Zustand bleibt)
+    legacy = WORKFLOW.parent / "PDF komprimieren (MRC).workflow"
+    shutil.copytree(WORKFLOW, legacy)
+    shutil.rmtree(WORKFLOW)
+    subprocess.run([str(BIN), "--schnellaktionen-einrichten"], check=True, timeout=60)
+    assert WORKFLOW.exists() and not legacy.exists(), sorted(p.name for p in WORKFLOW.parent.iterdir())
+    print("ok: alte Schnellaktion ersetzt")
+
+    # Deutsche Systemsprache: Menütitel deutsch, Dateiname bleibt englisch
+    subprocess.run(["defaults", "write", "io.github.philoneous.mac-pdf-mrc", "AppleLanguages", "-array", "de"], check=True)
+    try:
+        subprocess.run([str(BIN), "--schnellaktionen-einrichten"], check=True, timeout=60)
+        with open(WORKFLOW / "Contents/Info.plist", "rb") as f:
+            title = plistlib.load(f)["NSServices"][0]["NSMenuItem"]["default"]
+        assert title == "PDF komprimieren (MRC)", title
+    finally:
+        subprocess.run(["defaults", "delete", "io.github.philoneous.mac-pdf-mrc", "AppleLanguages"], check=False)
+        subprocess.run([str(BIN), "--schnellaktionen-einrichten"], check=True, timeout=60)
+    print("ok: Menütitel deutsch")
 
     # Kopie: Scan wird komprimiert, leere Seite entfernt, Original unverändert; digitale PDF ohne Ergebnis
     scan = write_scan(tmp / "Brief ä.pdf", [scan_image(rng), blank_image(rng)])
