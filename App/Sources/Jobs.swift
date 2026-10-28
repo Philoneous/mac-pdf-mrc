@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import AppKit
 import Foundation
+import SwiftUI
 
 /// Was mit einer Datei geschehen soll.
 enum JobKind: String, Codable, CaseIterable {
@@ -257,7 +258,11 @@ final class JobCenter: ObservableObject {
 
     @Published private(set) var jobs: [Job] = []
     @Published private(set) var finished: [HistoryEntry] = []  // Ergebnisse dieser Sitzung (Menüleiste)
-    @Published var menuBarVisible = false
+    /// Symbol in der Menüleiste (AppKit-Statussymbol; SwiftUIs MenuBarExtra mit Bindung an diesen Zustand lief in
+    /// eine Endlosschleife von Aktualisierungen)
+    private var menuBarVisible = false {
+        didSet { StatusItem.shared.setVisible(menuBarVisible) }
+    }
     private var idleTimer: Timer?
 
     var isBusy: Bool { !jobs.isEmpty }
@@ -283,6 +288,7 @@ final class JobCenter: ObservableObject {
         jobs.append(job)
         idleTimer?.invalidate()
         menuBarVisible = true
+        StatusItem.shared.setBusy(true)
         let settings = AppSettings.load()
         let id = job.id
         Task.detached {
@@ -307,6 +313,7 @@ final class JobCenter: ObservableObject {
         finished.insert(entry, at: 0)
         finished = Array(finished.prefix(5))
         guard jobs.isEmpty else { return }
+        StatusItem.shared.setBusy(false)
         // Symbol noch kurz zeigen (Ergebnis anklicken), dann ausblenden; ohne offenes Fenster die App beenden
         idleTimer = Timer.scheduledTimer(withTimeInterval: 8, repeats: false) { _ in
             Task { @MainActor in
@@ -327,6 +334,8 @@ final class JobCenter: ObservableObject {
 enum AppWindows {
     /// Im Hintergrund gestartet: das Fenster, das SwiftUI beim Start anlegt, gleich wieder schließen.
     static var suppressLaunchWindow = false
+    /// openWindow aus der Oberfläche (beim ersten Erscheinen gemerkt), um später ein Fenster anzulegen.
+    static var openWindow: OpenWindowAction?
 
     /// Hauptfenster (kein Menüleisten-Fenster, das ist ein Panel).
     static var main: [NSWindow] {
@@ -338,10 +347,13 @@ enum AppWindows {
     /// Hauptfenster zeigen (aus Menüleiste oder Mitteilung); die App erscheint dann auch im Dock.
     static func showMain(tab: String? = nil) {
         if let tab { UserDefaults.standard.set(tab, forKey: "tab") }
+        suppressLaunchWindow = false
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         if let window = main.first {
             window.makeKeyAndOrderFront(nil)
+        } else if let openWindow {
+            openWindow(id: "main")
         } else {
             // Die App „erneut öffnen“: SwiftUI legt dann ein neues Fenster der WindowGroup an
             NSWorkspace.shared.open(Bundle.main.bundleURL)

@@ -54,7 +54,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct PDFMRCApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var store = SettingsStore()
-    @StateObject private var jobs = JobCenter.shared
 
     init() {
         #if SPARKLE
@@ -75,14 +74,6 @@ struct PDFMRCApp: App {
                 }
             }
         }
-
-        // Symbol in der Menüleiste nur, solange Aufträge laufen (und kurz danach)
-        MenuBarExtra(isInserted: $jobs.menuBarVisible) {
-            JobsMenu()
-        } label: {
-            Image(systemName: jobs.isBusy ? "doc.zipper" : "checkmark.circle")
-        }
-        .menuBarExtraStyle(.window)
 
         Settings {
             SettingsPane().frame(width: 520, height: 520)
@@ -120,6 +111,7 @@ enum Pane: String, CaseIterable, Identifiable {
 
 struct ContentView: View {
     @AppStorage("tab") private var tab = Pane.umwandeln.rawValue
+    @Environment(\.openWindow) private var openWindow
 
     private var selection: Binding<Pane?> {
         Binding(get: { Pane(rawValue: tab) ?? .umwandeln }, set: { if let pane = $0 { tab = pane.rawValue } })
@@ -148,6 +140,7 @@ struct ContentView: View {
         }
         .frame(minWidth: 760, idealWidth: 800, minHeight: 520, idealHeight: 780)
         .onAppear {
+            AppWindows.openWindow = openWindow  // um später ein neues Fenster öffnen zu können (Menüleiste, Mitteilung)
             guard AppWindows.suppressLaunchWindow else { return }
             AppWindows.suppressLaunchWindow = false
             DispatchQueue.main.async { AppWindows.main.forEach { $0.close() } }
@@ -159,7 +152,6 @@ struct ContentView: View {
 
 struct JobsMenu: View {
     @ObservedObject private var center = JobCenter.shared
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -197,15 +189,8 @@ struct JobsMenu: View {
     }
 
     private func open(_ pane: Pane?) {
-        if let pane { UserDefaults.standard.set(pane.rawValue, forKey: "tab") }
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        AppWindows.suppressLaunchWindow = false
-        if let window = AppWindows.main.first {
-            window.makeKeyAndOrderFront(nil)
-        } else {
-            openWindow(id: "main")
-        }
+        StatusItem.shared.closePopover()
+        AppWindows.showMain(tab: pane?.rawValue)
     }
 }
 
