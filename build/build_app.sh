@@ -115,10 +115,10 @@ if [[ "$MODE" == --standalone ]]; then
   # Programme und ihre Bibliotheken (Zeitgrenze: bricht ab statt zu hängen)
   # pdftoppm (Poppler) entfällt: paperless-mrc prüft das Ergebnis dort mit Poppler, die App stattdessen mit Quartz
   # (MRC_POPPLER_CHECK=false) – Poppler zog alle (L)GPL/MPL-Bibliotheken nach (NSS, gpgme, glib …).
-  # opj_decompress wird nie aufgerufen.
+  # opj_decompress wird nie aufgerufen, recode_pdf verlangt es aber beim Start (which) neben opj_compress.
   KEGS="$(dirname "$BUILD")/kegs.json"
   perl -e 'alarm shift; exec @ARGV' 900 python3 "$SRC_DIR/build/bundle_dylibs.py" --manifest "$KEGS" "$H" "$F" \
-    "$BREW"/bin/{tesseract,opj_compress,jbig2} || die "Bibliotheken übernehmen fehlgeschlagen."
+    "$BREW"/bin/{tesseract,opj_compress,opj_decompress,jbig2} || die "Bibliotheken übernehmen fehlgeschlagen."
 
   msg "Tesseract-Sprachdaten"
   mkdir -p "$R/tessdata"
