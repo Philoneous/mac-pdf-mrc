@@ -204,6 +204,7 @@ struct AboutView: View {
             }
 
             Section("License") {
+                Text(verbatim: "Copyright © 2026 Philoneous")
                 Text("PDF MRC is free software under the GNU Affero General Public License, version 3 or later (AGPL-3.0-or-later). It comes without any warranty.")
                 HStack {
                     Link("License text", destination: URL(string: "https://www.gnu.org/licenses/agpl-3.0.html")!)
@@ -211,11 +212,17 @@ struct AboutView: View {
                     Spacer()
                     if let licenses = Bundle.main.resourceURL?.appendingPathComponent("Licenses"),
                        FileManager.default.fileExists(atPath: licenses.path) {
-                        Button("Component licenses…") { NSWorkspace.shared.open(licenses) }
-                            .help("Opens the folder with the license texts of the bundled components (Tesseract, Poppler, Sparkle and others).")
+                        Button("Third-party notices…") {
+                            NSWorkspace.shared.open(licenses.appendingPathComponent("THIRD-PARTY-NOTICES.txt"))
+                        }
+                        .help("Lists every bundled component with its version, license and where to get the source code.")
+                        Button("License texts…") { NSWorkspace.shared.open(licenses) }
+                            .help("Opens the folder with the full license texts of the bundled components.")
                     }
                 }
-                Text("Includes archive-pdf-tools (Internet Archive), PyMuPDF, Tesseract, OpenJPEG, jbig2enc, Poppler and Sparkle, among others, each under its own license.")
+                Text("Includes archive-pdf-tools and archive-hocr-tools (Internet Archive), PyMuPDF and MuPDF (Artifex), pikepdf, Tesseract, Python and Sparkle, among others, each under its own license.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Text("PDF MRC is an independent project and is not affiliated with or endorsed by Paperless-ngx or the Internet Archive.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
         }

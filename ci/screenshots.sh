@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # CI: App starten und je Reiter ein Bildschirmfoto aufnehmen (shots/*.png).
 set -euo pipefail
 APP="${MRC_APP:-$HOME/Applications/PDF MRC.app}"

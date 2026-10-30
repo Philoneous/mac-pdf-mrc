@@ -2,10 +2,10 @@
 """Kopiert Programme nach Contents/Helpers und alle ihre nicht-systemeigenen Bibliotheken nach Contents/Frameworks und
 biegt die Verweise auf @rpath um, damit die App ohne Homebrew läuft.
 
-    python3 build/bundle_dylibs.py [--licenses <Ordner>] <Contents/Helpers> <Contents/Frameworks> <Programm> …
+    python3 build/bundle_dylibs.py [--manifest <JSON>] <Contents/Helpers> <Contents/Frameworks> <Programm> …
 
-Mit --licenses werden die Lizenzdateien (LICENSE*, COPYING*, NOTICE*) aller Homebrew-Pakete, aus denen Dateien
-stammen, nach <Ordner>/<Paket>/ kopiert – GPL, Apache und BSD verlangen, dass sie mit den Programmen weitergegeben werden.
+Mit --manifest wird eine Liste der Homebrew-Pakete (Name → Keg-Ordner) geschrieben, aus denen Dateien stammen;
+build/notices.py erzeugt daraus die Lizenzhinweise.
 
 Löst @rpath, @loader_path und @executable_path anhand der Originaldateien auf. Bricht mit einer Meldung ab, wenn eine
 Bibliothek nicht gefunden wird (statt wie dylibbundler interaktiv nachzufragen).
@@ -62,58 +62,22 @@ def resolve(dep: str, original: Path, executable: Path) -> Path:
     return candidate.resolve()
 
 
-LICENSE_PREFIXES = ("LICENSE", "LICENCE", "COPYING", "NOTICE")
-
-
-def copy_licenses(sources: list[Path], target: Path) -> None:
-    """Lizenzdateien der Homebrew-Pakete (Keg: <Cellar>/<Paket>/<Version>/) einsammeln."""
+def kegs_of(sources: list[Path]) -> dict[str, str]:
+    """Homebrew-Pakete (Keg: <Cellar>/<Paket>/<Version>/), aus denen die Dateien stammen."""
     kegs = {}
     for source in sources:
         parts = source.parts
         if "Cellar" in parts and len(parts) > parts.index("Cellar") + 2:
             i = parts.index("Cellar")
-            kegs[parts[i + 1]] = Path(*parts[: i + 3])
-    missing = []
-    for name, keg in sorted(kegs.items()):
-        # Lizenzdateien im Keg-Hauptordner (z. B. leptonica-license.txt) und Ordner LICENSES (REUSE, z. B. glib)
-        files = [f for f in keg.iterdir() if f.is_file() and
-                 (f.name.upper().startswith(LICENSE_PREFIXES) or "LICENSE" in f.name.upper())]
-        dest = target / name
-        if (keg / "LICENSES").is_dir():
-            shutil.copytree(keg / "LICENSES", dest / "LICENSES", dirs_exist_ok=True)
-            files = files or [None]
-        for f in files:
-            if f is not None:
-                dest.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(f, dest / f.name)
-        if files:
-            continue
-        # Kein Lizenztext im Paket: Lizenz (SPDX) und Projektseite aus den Homebrew-Metadaten vermerken
-        try:
-            meta = json.loads(run("brew", "info", "--json=v2", name))["formulae"][0]
-        except (subprocess.CalledProcessError, KeyError, IndexError, ValueError):
-            missing.append(name)
-            continue
-        dest.mkdir(parents=True, exist_ok=True)
-        spdx = meta.get("license") or "?"
-        spdx = spdx if isinstance(spdx, str) else json.dumps(spdx)  # zusammengesetzte Lizenzen kommen als Objekt
-        (dest / "LICENSE.txt").write_text(
-            f"{name} {meta.get('versions', {}).get('stable', '')}\n"
-            f"Licence (SPDX): {spdx}\n"
-            f"Licence text: https://spdx.org/licenses/ (search for the identifier above)\n"
-            f"Project / source code: {meta.get('homepage', '')}\n"
-            f"Source archive: {meta.get('urls', {}).get('stable', {}).get('url', '')}\n", encoding="utf-8")
-        print(f"  {name}: kein Lizenztext im Paket, Verweis auf {spdx} angelegt")
-    print(f"[OK] Lizenzen von {len(kegs) - len(missing)} Paketen nach {target}")
-    if missing:
-        print(f"::warning title=Lizenzen::Keine Lizenzdatei im Paket: {', '.join(missing)}")
+            kegs[parts[i + 1]] = str(Path(*parts[: i + 3]))
+    return dict(sorted(kegs.items()))
 
 
 def main() -> None:
     args = sys.argv[1:]
-    licenses = None
-    if args[:1] == ["--licenses"]:
-        licenses, args = Path(args[1]), args[2:]
+    manifest = None
+    if args[:1] == ["--manifest"]:
+        manifest, args = Path(args[1]), args[2:]
     sys.argv[1:] = args
     helpers, frameworks = Path(sys.argv[1]), Path(sys.argv[2])
     helpers.mkdir(parents=True, exist_ok=True)
@@ -149,8 +113,10 @@ def main() -> None:
         run("install_name_tool", "-add_rpath", own_rpath, str(bundled))
         print(f"  {bundled.name}")
     print(f"[OK] {len(originals)} Bibliotheken nach {frameworks}")
-    if licenses:
-        copy_licenses([Path(p).resolve() for p in sys.argv[3:]] + list(originals.values()), licenses)
+    if manifest:
+        kegs = kegs_of([Path(p).resolve() for p in sys.argv[3:]] + list(originals.values()))
+        manifest.write_text(json.dumps(kegs, indent=2))
+        print(f"[OK] {len(kegs)} Homebrew-Pakete: {', '.join(kegs)}")
 
 
 if __name__ == "__main__":

@@ -29,9 +29,9 @@ command -v brew >/dev/null || die "Homebrew fehlt – siehe https://brew.sh"
 xcrun --find swiftc >/dev/null 2>&1 || die "Swift-Compiler fehlt – bitte 'xcode-select --install' ausführen."
 [[ "$HOME" != *[\&\<\>\"\$\`\\]* ]] || die "Ungewöhnliche Zeichen im Pfad $HOME."
 
-# ---- Werkzeuge (Tesseract mit allen Sprachen, OpenJPEG, Poppler, jbig2enc, uv) -----
+# ---- Werkzeuge (Tesseract mit allen Sprachen, OpenJPEG, jbig2enc, uv) -----
 msg "Homebrew-Pakete installieren"
-brew install --quiet tesseract tesseract-lang openjpeg poppler jbig2enc uv
+brew install --quiet tesseract tesseract-lang openjpeg jbig2enc uv
 
 # ---- paperless-mrc in eigener Python-Umgebung ------------------------------------------
 msg "paperless-mrc installieren"

@@ -180,6 +180,20 @@ def main() -> None:
         assert (tmp / "francais (komprimiert).pdf").exists(), out
         print("ok: Sprache nachgeladen")
 
+        # Lizenzhinweise vollständig, mit Quellarchiven aller Copyleft-Teile; ausgedünnte Teile fehlen wirklich
+        licenses = APP / "Contents/Resources/Licenses"
+        notices = (licenses / "THIRD-PARTY-NOTICES.txt").read_text().lower()
+        for name in ("archive-pdf-tools", "archive-hocr-tools", "pymupdf", "mupdf", "pikepdf", "tesseract", "leptonica",
+                     "openjpeg", "jbig2enc", "sparkle", "python (cpython", "freetype project", "independent jpeg group"):
+            assert name in notices, name
+        sources = {s["name"].lower() for s in json.loads((licenses / "sources.json").read_text())}
+        assert {"archive-pdf-tools", "archive-hocr-tools", "paperless-mrc", "pikepdf", "mupdf", "pymupdf"} <= sources, sources
+        site = next((APP / "Contents/Resources/python/lib").glob("python3.*/site-packages"))
+        gone = [str(p) for p in [APP / "Contents/Helpers/pdftoppm", site / "scipy/odr", site / "lxml", site / "networkx"]
+                + list(site.glob("scipy/.dylibs/libgfortran*")) if p.exists()]
+        assert not gone, gone
+        print(f"ok: Lizenzhinweise ({len(sources)} Quellarchive), Ausdünnung")
+
     # Scan mit vorhandener Textebene (Scanner-OCR): nutzt pdf-to-hocr aus dem App-Paket (Startskript mit
     # richtigem Python, nicht dem Build-Ordner)
     layered = write_scan(tmp / "mit textebene.pdf", [scan_image(rng)])

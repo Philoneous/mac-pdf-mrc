@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # CI: Befehl ausführen; schlägt er fehl, die letzten Ausgabezeilen als Fehler-Annotation melden
 # (Annotationen sind über die Checks-API lesbar, auch ohne Zugriff auf Logs und Artefakte).
 #   bash ci/report.sh <Titel> <Befehl …>

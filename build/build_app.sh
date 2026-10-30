@@ -4,7 +4,7 @@
 #  Baut „PDF MRC.app“.
 #
 #    build/build_app.sh <Zielordner> --standalone
-#        Eigenständige App: Python, paperless-mrc, Tesseract (deu, eng, osd), OpenJPEG, jbig2enc und pdftoppm
+#        Eigenständige App: Python, paperless-mrc, Tesseract (deu, eng, osd), OpenJPEG und jbig2enc
 #        liegen im App-Paket. Braucht beim Bauen Homebrew (Werkzeuge), uv (Python) und Netz.
 #    build/build_app.sh <Zielordner> --homebrew <Pfad zu paperless-mrc>
 #        App für die Homebrew-Installation (install.sh): Werkzeuge und paperless-mrc liegen außerhalb.
@@ -74,7 +74,7 @@ if [[ "$MODE" == --standalone ]]; then
   ditto "$SPARKLE_DIR/Sparkle.framework" "$F/Sparkle.framework"
 
   msg "Bauwerkzeuge aus Homebrew"
-  brew install --quiet uv tesseract openjpeg poppler jbig2enc
+  brew install --quiet uv tesseract openjpeg jbig2enc zstd
 
   msg "Python und paperless-mrc"
   uv python install --quiet 3.13
@@ -84,15 +84,25 @@ if [[ "$MODE" == --standalone ]]; then
   rm -f "$R"/python/lib/python3.*/EXTERNALLY-MANAGED
   uv pip install --quiet --python "$PY" --system "$PACKAGE"
   PAPERLESS_VERSION="$("$PY" -c 'import importlib.metadata as m, json; d = m.distribution("paperless-mrc"); u = json.loads(d.read_text("direct_url.json") or "{}"); print(d.version + "+" + u.get("vcs_info", {}).get("commit_id", "")[:7])')"
-  # PyMuPDF 2 bringt eine KI-Layoutanalyse mit (onnxruntime, Modelle), die paperless-mrc nicht nutzt;
-  # PyMuPDF lädt sie nur, wenn vorhanden (try/except ImportError). Tests der Bibliotheken werden nicht gebraucht.
-  uv pip uninstall --quiet --python "$PY" --system onnxruntime protobuf flatbuffers pymupdf4llm pymupdf-layout || true
+  # Ausdünnen – gemessen mit einem Import-Protokoll aller Python-Prozesse über die Testsuite von paperless-mrc
+  # (inkl. recode_pdf, pdf-to-hocr, Worker). Nie geladen und daher entfernt (spart Platz und Lizenzpflichten):
+  #  - KI-Layoutanalyse von PyMuPDF (onnxruntime …; PyMuPDF lädt sie nur, wenn vorhanden)
+  #  - lxml (nur XMP-Metadaten in pikepdf), networkx (skimage.graph), imageio/tifffile (skimage.io),
+  #    psutil/PyYAML (Test-/Konfig-Helfer von numpy/scipy), pip (nur zum Installieren)
+  #  - scipy.odr: einziger Nutzer der GCC-Fortran-Laufzeit (GPL/LGPL); scipy unterstützt das Fehlen ausdrücklich
+  for pkg in onnxruntime protobuf flatbuffers pymupdf4llm pymupdf-layout lxml networkx imageio tifffile psutil \
+             pyyaml pip; do
+    uv pip uninstall --quiet --python "$PY" --system "$pkg" 2>/dev/null || true
+  done
   SP="$(echo "$R"/python/lib/python3.*/site-packages)"
-  rm -rf "$SP/pymupdf/layout" "$SP/pymupdf/mupdf-devel"
+  for mod in onnxruntime lxml networkx imageio tifffile psutil yaml pip; do
+    [[ ! -e "$SP/$mod" ]] || die "Python-Paket $mod konnte nicht entfernt werden."
+  done
+  rm -rf "$SP/pymupdf/layout" "$SP/pymupdf/mupdf-devel" "$SP/scipy/odr" "$SP"/scipy/.dylibs/lib{gfortran,quadmath,gcc_s}*
   find "$SP" -type d \( -name tests -o -name test \) -prune -exec rm -rf {} +
-  # Nicht benötigte Teile der Standardbibliothek
+  # Nicht benötigte Teile der Standardbibliothek (Tcl/Tk: keine Oberfläche in Python)
   rm -rf "$R"/python/lib/python3.*/{test,idlelib,tkinter,turtledemo,ensurepip} "$R"/python/lib/{tcl,tk,itcl,thread}* \
-         "$R"/python/share "$R"/python/include
+         "$R"/python/lib/libtcl* "$R"/python/lib/python3.*/lib-dynload/_tkinter* "$R"/python/share "$R"/python/include
   # Skripte (recode_pdf, pdf-to-hocr …) mit festem Python-Pfad → über PATH (python/bin steht vorn)
   python3 "$SRC_DIR/build/fix_scripts.py" "$R/python/bin" || die "Skripte umstellen fehlgeschlagen."
   if grep -l "$(dirname "$BUILD")" "$R"/python/bin/* 2>/dev/null; then
@@ -103,8 +113,12 @@ if [[ "$MODE" == --standalone ]]; then
   msg "Werkzeuge aus Homebrew übernehmen"
   BREW="$(brew --prefix)"
   # Programme und ihre Bibliotheken (Zeitgrenze: bricht ab statt zu hängen)
-  perl -e 'alarm shift; exec @ARGV' 900 python3 "$SRC_DIR/build/bundle_dylibs.py" --licenses "$R/Licenses" "$H" "$F" \
-    "$BREW"/bin/{tesseract,opj_compress,opj_decompress,jbig2,pdftoppm} || die "Bibliotheken übernehmen fehlgeschlagen."
+  # pdftoppm (Poppler) entfällt: paperless-mrc prüft das Ergebnis dort mit Poppler, die App stattdessen mit Quartz
+  # (MRC_POPPLER_CHECK=false) – Poppler zog alle (L)GPL/MPL-Bibliotheken nach (NSS, gpgme, glib …).
+  # opj_decompress wird nie aufgerufen.
+  KEGS="$(dirname "$BUILD")/kegs.json"
+  perl -e 'alarm shift; exec @ARGV' 900 python3 "$SRC_DIR/build/bundle_dylibs.py" --manifest "$KEGS" "$H" "$F" \
+    "$BREW"/bin/{tesseract,opj_compress,jbig2} || die "Bibliotheken übernehmen fehlgeschlagen."
 
   msg "Tesseract-Sprachdaten"
   mkdir -p "$R/tessdata"
@@ -115,38 +129,9 @@ if [[ "$MODE" == --standalone ]]; then
     curl -fsSL -o "$R/tessdata/$lang.traineddata" "https://github.com/tesseract-ocr/tessdata_fast/raw/main/$lang.traineddata"
   done
 
-  # Lizenzen, die nicht aus Homebrew-Paketen kommen (Python-Pakete: jeweils in ihrem *.dist-info-Ordner)
-  if compgen -G "$SPARKLE_DIR/LICENSE*" >/dev/null; then
-    mkdir -p "$R/Licenses/sparkle" && cp "$SPARKLE_DIR"/LICENSE* "$R/Licenses/sparkle/"
-  else
-    echo "::warning title=Lizenzen::Sparkle-Lizenzdatei nicht im Archiv gefunden"
-  fi
-  mkdir -p "$R/Licenses/tessdata_fast"
-  curl -fsSL -o "$R/Licenses/tessdata_fast/LICENSE" "https://github.com/tesseract-ocr/tessdata_fast/raw/main/LICENSE"
-  mkdir -p "$R/Licenses/python" && cp "$R/python/lib/python3"*/LICENSE.txt "$R/Licenses/python/" 2>/dev/null \
-    || echo "::warning title=Lizenzen::Python-Lizenz nicht gefunden"
-  cat > "$R/Licenses/README.txt" <<'LIC'
-PDF MRC – AGPL-3.0-or-later – https://github.com/Philoneous/mac-pdf-mrc
-
-Mitgelieferte Komponenten / bundled components: one folder per package with its licence files.
-Python packages (paperless-mrc, archive-pdf-tools, PyMuPDF, pikepdf, …) carry their licences in
-Contents/Resources/python/lib/python3.*/site-packages/*.dist-info/.
-Source code: the GitHub repository above; third-party sources from their upstream projects
-(Homebrew formulae: https://formulae.brew.sh).
-LIC
-
-  # Fontconfig (von Poppler genutzt): Systemschriften, Cache im Benutzerordner
-  mkdir -p "$R/fonts"
-  cat > "$R/fonts/fonts.conf" <<'FC'
-<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <dir>/System/Library/Fonts</dir>
-  <dir>/Library/Fonts</dir>
-  <dir prefix="xdg">fonts</dir>
-  <cachedir prefix="xdg">mac-pdf-mrc-fontconfig</cachedir>
-</fontconfig>
-FC
+  msg "Lizenzhinweise"
+  python3 "$SRC_DIR/build/notices.py" --app "$BUILD" --kegs "$KEGS" --sparkle "$SPARKLE_DIR" \
+    --license "$SRC_DIR/LICENSE" --version "$VERSION" || die "Lizenzhinweise unvollständig (siehe oben)."
 fi
 
 # ---- Info.plist ------------------------------------------------------------------------------------
@@ -511,6 +496,10 @@ if [[ "$MODE" == --standalone ]]; then
     [[ -z "$refs" ]] || bad+="$f: $refs"$'\n'
   done < <(find "$C" -type f -print0)
   [[ -z "$bad" ]] || die "Externe Bibliotheken: $bad"
+  # Jede Bibliothek, die ein Programm oder eine Python-Erweiterung lädt, muss im Paket oder System liegen
+  # (fängt beim Ausdünnen versehentlich entfernte Teile ab)
+  python3 "$SRC_DIR/build/check_bundle.py" "$BUILD" || die "Unvollständiges App-Paket (siehe oben)."
+  [[ -s "$C/Resources/Licenses/THIRD-PARTY-NOTICES.txt" ]] || die "Lizenzhinweise fehlen."
 fi
 
 if [[ -n "${GITHUB_ACTIONS:-}" && "$MODE" == --standalone ]]; then

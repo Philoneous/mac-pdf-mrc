@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # =============================================================================
 #  Veröffentlicht ein Release (nur in GitHub Actions: Tag v* gepusht oder manueller Start mit Version): signiert das DMG für Sparkle,
-#  schreibt appcast.xml und legt das GitHub-Release mit DMG und Feed an.
+#  schreibt appcast.xml und legt das GitHub-Release mit DMG, Feed und Lizenzhinweisen an. Die Quellarchive der
+#  Copyleft-Komponenten (Licenses/sources.json der App) kommen ins dauerhafte Release „third-party-sources“.
 #
 #  Umgebung: RELEASE_TAG (manueller Start) oder GITHUB_REF_NAME (gepushtes Tag), GITHUB_SHA, GITHUB_REPOSITORY, GH_TOKEN, SPARKLE_PRIVATE_KEY (Repository-Secret)
 # =============================================================================
@@ -36,12 +37,40 @@ public_in_app="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$APP/Content
   || die "SPARKLE_PRIVATE_KEY passt nicht zu SUPublicEDKey der App."
 
 # Änderungen seit dem letzten Tag als Release-Notizen
-previous="$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)"
+previous="$(git describe --tags --abbrev=0 --match 'v*' "$TAG^" 2>/dev/null || true)"
 git log --no-merges --format='- %s' "${previous:+$previous..}$TAG" | head -n 40 > dist/notes.md
 
 python3 build/appcast.py --version "$VERSION" --build "$build_number" \
   --url "https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/PDF-MRC.dmg" \
   --signature "$signature" --notes-file dist/notes.md --out dist/appcast.xml
+
+# Quellcode der Copyleft-Komponenten (AGPL-3.0 §6, MPL-2.0 §3.2): genau die Archive, aus denen diese App gebaut
+# ist, geprüft gegen die Prüfsummen in der App. Eigenes Release, nie „latest“ (Sparkle-Feed und Download-Link
+# zeigen auf …/releases/latest); Archive werden nie gelöscht, auch nicht für ältere Versionen.
+LICENSES="$APP/Contents/Resources/Licenses"
+[[ -s "$LICENSES/sources.json" && -s "$LICENSES/THIRD-PARTY-NOTICES.txt" ]] || die "Lizenzhinweise fehlen in der App."
+SOURCES_TAG="third-party-sources"
+if ! gh release view "$SOURCES_TAG" >/dev/null 2>&1; then
+  gh release create "$SOURCES_TAG" --target "$GITHUB_SHA" --latest=false --title "Third-party source code" \
+    --notes "Source code of the components under copyleft licenses (AGPL-3.0, MPL-2.0 and others) bundled in PDF MRC, exactly as used for the builds. Which archive belongs to which app version: Contents/Resources/Licenses/THIRD-PARTY-NOTICES.txt and sources.json in the app (with SHA-256 checksums).
+
+Quellcode der in PDF MRC enthaltenen Komponenten unter Copyleft-Lizenzen (AGPL-3.0, MPL-2.0 u. a.), genau wie für die Builds verwendet. Zuordnung zu den App-Versionen: THIRD-PARTY-NOTICES.txt und sources.json im App-Paket."
+fi
+existing="$(gh release view "$SOURCES_TAG" --json assets --jq '.assets[].name')"
+python3 -c 'import json, sys; [print(s["url"], s["sha256"], s["filename"], sep="\t") for s in json.load(open(sys.argv[1]))]' \
+  "$LICENSES/sources.json" > dist/sources.tsv
+mkdir -p dist/sources
+while IFS=$'\t' read -r url sum name; do
+  if grep -qxF "$name" <<<"$existing"; then
+    echo "Quelle vorhanden: $name"
+    continue
+  fi
+  curl -fsSL --retry 3 -o "dist/sources/$name" "$url" || die "Quellarchiv nicht ladbar: $url"
+  [[ "$(shasum -a 256 "dist/sources/$name" | cut -d' ' -f1)" == "$sum" ]] || die "Prüfsumme falsch: $name"
+  gh release upload "$SOURCES_TAG" "dist/sources/$name" || die "Hochladen fehlgeschlagen: $name"
+  echo "Quelle hochgeladen: $name"
+done < dist/sources.tsv
+cp "$LICENSES/THIRD-PARTY-NOTICES.txt" dist/THIRD-PARTY-NOTICES.txt
 
 {
   echo "**Installation:** \`PDF-MRC.dmg\` laden, öffnen, „PDF MRC“ in „Programme“ ziehen. Beim ersten Start:"
@@ -56,7 +85,15 @@ python3 build/appcast.py --version "$VERSION" --build "$build_number" \
   echo
   echo "☕ PDF MRC ist kostenlos. Wer die Entwicklung unterstützen möchte: / PDF MRC is free. To support its development:"
   echo "https://ko-fi.com/Philoneous"
+  echo
+  echo "**Lizenzen / Licenses:** PDF MRC © Philoneous, AGPL-3.0-or-later; Quellcode: Quellcode-Archiv dieses Releases."
+  echo "Enthaltene Komponenten und ihre Lizenzen: \`THIRD-PARTY-NOTICES.txt\` (auch in der App: Info → Hinweise zu Drittkomponenten)."
+  echo "Quellcode der Copyleft-Komponenten: Release [$SOURCES_TAG](https://github.com/$GITHUB_REPOSITORY/releases/tag/$SOURCES_TAG)."
+  echo "PDF MRC © Philoneous, AGPL-3.0-or-later; source: this release's source archive. Bundled components and their"
+  echo "licenses: \`THIRD-PARTY-NOTICES.txt\` (also in the app: About → Third-party notices). Source code of the copyleft"
+  echo "components: release [$SOURCES_TAG](https://github.com/$GITHUB_REPOSITORY/releases/tag/$SOURCES_TAG)."
 } > dist/release.md
 
-gh release create "$TAG" --target "$GITHUB_SHA" "$DMG" dist/appcast.xml --title "PDF MRC $VERSION" --notes-file dist/release.md
+gh release create "$TAG" --target "$GITHUB_SHA" --latest "$DMG" dist/appcast.xml dist/THIRD-PARTY-NOTICES.txt \
+  --title "PDF MRC $VERSION" --notes-file dist/release.md
 echo "[OK] Release $TAG veröffentlicht (Build $build_number)"

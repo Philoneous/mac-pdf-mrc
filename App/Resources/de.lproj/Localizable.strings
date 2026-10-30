@@ -38,7 +38,6 @@
 "Clear History" = "Verlauf löschen";
 "Clear History…" = "Verlauf löschen …";
 "Clear the history?" = "Verlauf löschen?";
-"Component licenses…" = "Lizenzen der Komponenten …";
 "Compress and Send to Paperless" = "Komprimieren und an Paperless senden";
 "Compress PDF (MRC)" = "PDF komprimieren (MRC)";
 "Compressed" = "Komprimiert";
@@ -70,6 +69,7 @@
 "Drop a PDF here" = "PDF hierher ziehen";
 "Duration" = "Dauer";
 "error, file left unchanged: %@" = "Fehler, Datei bleibt unverändert: %@";
+"result could not be displayed by macOS – unchanged" = "Ergebnis lässt sich von macOS nicht anzeigen – unverändert";
 "Error: %@" = "Fehler: %@";
 "Failed" = "Fehlgeschlagen";
 "File" = "Datei";
@@ -79,7 +79,6 @@
 "History" = "Verlauf";
 "If the orientation detection is unsure (below the minimum confidence) but suggests a rotation, the text is recognized in both orientations; the page is only rotated if that gives clearly more confidently recognized words (at least 1.5 times as many). Helps with landscape forms scanned in portrait. Costs extra time only for such pages. Default: on." = "Ist sich die Ausrichtungserkennung unsicher (unter der Mindestsicherheit), schlägt aber eine Drehung vor, wird der Text in beiden Lagen erkannt; gedreht wird nur, wenn das deutlich mehr sicher erkannte Wörter ergibt (mindestens 1,5-mal so viele). Hilft bei hochkant gescannten Querformat-Formularen. Kostet nur bei solchen Seiten zusätzliche Zeit. Standard: an.";
 "In Paperless under “My Profile” → “API Auth Token”. Stored in the macOS keychain. After an app update, macOS asks once whether the app may still access it." = "In Paperless unter „Mein Profil“ → „API-Auth-Token“. Wird im macOS-Schlüsselbund gespeichert. Nach einem Update der App fragt macOS einmal, ob sie weiter darauf zugreifen darf.";
-"Includes archive-pdf-tools (Internet Archive), PyMuPDF, Tesseract, OpenJPEG, jbig2enc, Poppler and Sparkle, among others, each under its own license." = "Enthält u. a. archive-pdf-tools (Internet Archive), PyMuPDF, Tesseract, OpenJPEG, jbig2enc, Poppler und Sparkle, jeweils unter eigener Lizenz.";
 "Install automatically" = "Automatisch installieren";
 "Install automatically: new versions are downloaded in the background and installed when you quit the app. Ask: the app shows new versions and asks before installing. Manually only: no automatic checks; use “Check for updates now”." = "Automatisch installieren: Neue Versionen werden im Hintergrund geladen und beim Beenden der App installiert. Fragen: Die App zeigt neue Versionen an und fragt vor der Installation. Nur manuell: keine automatische Suche; „Jetzt nach Updates suchen“ verwenden.";
 "Installation" = "Installation";
@@ -124,7 +123,6 @@
 "Open in Paperless" = "In Paperless öffnen";
 "Open PDF MRC" = "PDF MRC öffnen";
 "Opens ko-fi.com/Philoneous in your browser. Payment by PayPal or card, no account needed. Contributions are voluntary and not tax-deductible donations." = "Öffnet ko-fi.com/Philoneous im Browser. Zahlung per PayPal oder Karte, ohne Konto. Beiträge sind freiwillig und keine steuerlich absetzbaren Spenden.";
-"Opens the folder with the license texts of the bundled components (Tesseract, Poppler, Sparkle and others)." = "Öffnet den Ordner mit den Lizenztexten der mitgelieferten Komponenten (Tesseract, Poppler, Sparkle u. a.).";
 "Output" = "Ausgabe";
 "Page selection" = "Seitenauswahl";
 "Pages" = "Seiten";
@@ -216,3 +214,9 @@
 "with paperless-mrc %@" = "mit paperless-mrc %@";
 "“Compress and Send to Paperless”" = "„Komprimieren und an Paperless senden“";
 "“Send to Paperless” (original)" = "„An Paperless senden“ (Original)";
+"Third-party notices…" = "Hinweise zu Drittkomponenten…";
+"Lists every bundled component with its version, license and where to get the source code." = "Listet jede mitgelieferte Komponente mit Version, Lizenz und Bezugsquelle des Quellcodes auf.";
+"License texts…" = "Lizenztexte…";
+"Opens the folder with the full license texts of the bundled components." = "Öffnet den Ordner mit den vollständigen Lizenztexten der mitgelieferten Komponenten.";
+"Includes archive-pdf-tools and archive-hocr-tools (Internet Archive), PyMuPDF and MuPDF (Artifex), pikepdf, Tesseract, Python and Sparkle, among others, each under its own license." = "Enthält u. a. archive-pdf-tools und archive-hocr-tools (Internet Archive), PyMuPDF und MuPDF (Artifex), pikepdf, Tesseract, Python und Sparkle, jeweils unter eigener Lizenz.";
+"PDF MRC is an independent project and is not affiliated with or endorsed by Paperless-ngx or the Internet Archive." = "PDF MRC ist ein unabhängiges Projekt und steht in keiner Verbindung zu Paperless-ngx oder dem Internet Archive.";

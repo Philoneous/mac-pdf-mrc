@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import CoreGraphics
 import Foundation
 
 /// Kennzahlen aus der maschinenlesbaren Ergebniszeile von paperless-mrc.
@@ -62,7 +63,6 @@ enum Converter {
                            path: [python.deletingLastPathComponent().path, contents.appendingPathComponent("Helpers").path,
                                   "/usr/bin", "/bin", "/usr/sbin", "/sbin"],
                            environment: ["TESSDATA_PREFIX": Languages.directory.path,
-                                         "FONTCONFIG_FILE": resources.appendingPathComponent("fonts/fonts.conf").path,
                                          // das App-Paket bleibt unverändert (Signatur), keine fremden Pakete
                                          "PYTHONDONTWRITEBYTECODE": "1", "PYTHONNOUSERSITE": "1",
                                          "PYMUPDF_SUGGEST_LAYOUT_ANALYZER": "0"])
@@ -125,10 +125,21 @@ enum Converter {
                     message.removeFirst(src.lastPathComponent.count + 2)
                 }
             }
-            return CompressedCopy(directory: workDir, file: work, message: message,
-                                  log: lines.joined(separator: "\n"),
-                                  changed: !fm.contentsEqual(atPath: src.path, andPath: work.path),
-                                  result: MRCResult(json))
+            var log = lines.joined(separator: "\n")
+            var result = MRCResult(json)
+            var changed = !fm.contentsEqual(atPath: src.path, andPath: work.path)
+            if changed && !rendersWithQuartz(work) {
+                // Ergebnis verwerfen: Arbeitskopie wieder wie das Original, Original bleibt unangetastet
+                changed = false
+                message = L("result could not be displayed by macOS – unchanged")
+                log += (log.isEmpty ? "" : "\n") + message
+                result.compressed = false
+                result.sizeAfter = nil
+                try? fm.removeItem(at: work)
+                try fm.copyItem(at: src, to: work)
+            }
+            return CompressedCopy(directory: workDir, file: work, message: message, log: log, changed: changed,
+                                  result: result)
         } catch {
             try? fm.removeItem(at: workDir)
             throw error
@@ -173,6 +184,29 @@ enum Converter {
         return Conversion(message: message, log: log, output: dest, result: copy.result)
     }
 
+    /// Prüfung des Ergebnisses mit dem PDF-Darsteller von macOS (statt Poppler in paperless-mrc,
+    /// MRC_POPPLER_CHECK=false): Das Dokument muss sich öffnen und jede Seite zeichnen lassen.
+    /// Seitenzahl und Textebene prüft paperless-mrc selbst.
+    static func rendersWithQuartz(_ url: URL) -> Bool {
+        guard let document = CGPDFDocument(url as CFURL), document.isUnlocked, document.numberOfPages > 0 else {
+            return false
+        }
+        let size = 32
+        for index in 1...document.numberOfPages {
+            guard let page = document.page(at: index) else { return false }
+            let box = page.getBoxRect(.mediaBox)
+            guard box.width > 0, box.height > 0,
+                  let context = CGContext(data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0,
+                                          space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else { return false }
+            context.scaleBy(x: CGFloat(size) / box.width, y: CGFloat(size) / box.height)
+            context.translateBy(x: -box.minX, y: -box.minY)
+            context.drawPDFPage(page)
+        }
+        return true
+    }
+
     private static func run(_ runtime: Runtime, on work: URL, with profile: Profile) throws -> String {
         let process = Process()
         process.executableURL = runtime.executable
@@ -186,6 +220,8 @@ enum Converter {
         // Protokoll in der Sprache der App, mit Zeiten je Schritt (für den Verlauf)
         env["MRC_LANGUAGE"] = Bundle.main.preferredLocalizations.first == "de" ? "de" : "en"
         env["MRC_TIMING"] = "true"
+        // Ergebnisprüfung ohne Poppler (nicht mitgeliefert): stattdessen rendersWithQuartz
+        env["MRC_POPPLER_CHECK"] = "false"
         env["PATH"] = runtime.path.joined(separator: ":")
         process.environment = env
         let pipe = Pipe()

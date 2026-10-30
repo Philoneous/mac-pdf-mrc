@@ -21,7 +21,9 @@ des Internet Archive nutzt. Was dabei genau passiert (nur gescannte Seiten, leer
    Datenschutz & Sicherheit* öffnen, nach unten scrollen und **Dennoch öffnen** klicken.
 
 Voraussetzungen: macOS 13 oder neuer, Apple-Chip. Alles, was die App braucht (Python, paperless-mrc, Tesseract,
-OpenJPEG, jbig2enc, Poppler), steckt in der App – Homebrew ist nicht nötig.
+OpenJPEG, jbig2enc), steckt in der App – Homebrew ist nicht nötig. Das Ergebnis prüft die App zusätzlich zu den
+Prüfungen von paperless-mrc (Seitenzahl, Textebene) mit dem PDF-Darsteller von macOS: Jede Seite muss sich öffnen
+und zeichnen lassen.
 
 **Updates** installiert die App automatisch (Sparkle): Sie sucht beim Start – auch wenn eine Schnellaktion sie im
 Hintergrund startet – und alle vier Stunden, solange sie läuft, lädt neue Versionen im Hintergrund und installiert sie
@@ -147,7 +149,10 @@ Schnellaktionen neu an).
 
 ## Entwicklung
 
-`build/build_app.sh dist --standalone` baut die eigenständige App (zum Bauen nötig: Homebrew, uv, Netz);
+`build/build_app.sh dist --standalone` baut die eigenständige App (zum Bauen nötig: Homebrew, uv, Netz). Es
+entfernt alles, was paperless-mrc nie lädt (gemessen mit einem Import-Protokoll über dessen Testsuite), erzeugt die
+Hinweise zu Drittkomponenten (`build/notices.py`) und prüft, dass jedes mitgelieferte Programm und jede Bibliothek alle
+geladenen Bibliotheken findet (`build/check_bundle.py`);
 `build/make_dmg.sh dist dist/PDF-MRC.dmg` packt sie. GitHub Actions (`.github/workflows/macos.yml`) baut und testet bei
 jedem Push auf `main`, zwei Jobs parallel:
 
@@ -164,7 +169,8 @@ letzten Ausgabezeilen als Annotation am Lauf; bei manuellem Start landen zusätz
 **Releases:** *Actions → macOS → Run workflow* auf `main` mit einer Version (z. B. `1.0.0`) starten oder ein Tag
 `vX.Y.Z` pushen. Der Workflow baut und testet wie oben, danach signiert `build/release.sh`
 das DMG für Sparkle (Repository-Secret `SPARKLE_PRIVATE_KEY`, geprüft gegen `SUPublicEDKey` in der App), schreibt
-`appcast.xml` und legt das GitHub-Release an. Installierte Apps finden es über
+`appcast.xml`, lädt die Quellarchive der mitgelieferten Copyleft-Komponenten (siehe *Lizenz*) ins Release
+`third-party-sources` und legt das GitHub-Release an. Installierte Apps finden es über
 `https://github.com/Philoneous/mac-pdf-mrc/releases/latest/download/appcast.xml`. Ein normaler Push löst kein Update
 aus.
 
@@ -180,4 +186,20 @@ Spenden.
 
 ## Lizenz
 
-GNU Affero General Public License v3.0 oder später (`AGPL-3.0-or-later`), siehe [LICENSE](LICENSE) – wie paperless-mrc.
+Copyright © 2026 Philoneous. GNU Affero General Public License v3.0 oder später (`AGPL-3.0-or-later`), siehe
+[LICENSE](LICENSE) – wie paperless-mrc.
+
+**Mitgelieferte Komponenten.** Die App enthält Software Dritter, jeweils unter eigener Lizenz – u. a.
+[archive-pdf-tools](https://github.com/internetarchive/archive-pdf-tools) und
+[archive-hocr-tools](https://github.com/internetarchive/archive-hocr-tools) (Internet Archive, AGPL-3.0),
+[PyMuPDF](https://github.com/pymupdf/PyMuPDF) und [MuPDF](https://mupdf.com) (Artifex, AGPL-3.0),
+[pikepdf](https://github.com/pikepdf/pikepdf) (MPL-2.0), [Tesseract](https://github.com/tesseract-ocr/tesseract)
+(Apache-2.0), [Python](https://www.python.org) ([python-build-standalone](https://github.com/astral-sh/python-build-standalone)),
+NumPy, SciPy, scikit-image, Pillow, OpenJPEG, jbig2enc, Leptonica und [Sparkle](https://sparkle-project.org). Die
+vollständige Liste mit Versionen, Lizenzen und Lizenztexten entsteht beim Bauen: in der App unter
+*Info → Hinweise zu Drittkomponenten* (`PDF MRC.app/Contents/Resources/Licenses`) und an jedem Release als
+`THIRD-PARTY-NOTICES.txt`. Die genauen Quellarchive aller Copyleft-Komponenten liegen im Release
+[third-party-sources](https://github.com/Philoneous/mac-pdf-mrc/releases/tag/third-party-sources).
+
+PDF MRC ist ein unabhängiges Projekt und steht in keiner Verbindung zu Paperless-ngx, dem Internet Archive oder
+Artifex.
