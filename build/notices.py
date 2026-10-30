@@ -157,7 +157,11 @@ def homebrew(n: Notices, kegs: dict):
         n.add(name, version, license, "Contents/Helpers, Contents/Frameworks", meta.get("homepage"), copied)
         if COPYLEFT.search(license or ""):
             stable = meta.get("urls", {}).get("stable", {})
-            n.need_source(name, version, license, stable.get("url"), stable.get("checksum"))
+            url = stable.get("url") or ""
+            filename = url.rsplit("/", 1)[-1]
+            if not filename.lower().startswith(name.lower()):  # z. B. GitHub-Archiv „v1.5.7.tar.gz“
+                filename = f"{name}-{filename}"
+            n.need_source(name, version, license, url, stable.get("checksum"), filename)
 
 
 # ------------------------------------------------------------------------------------------- Python
