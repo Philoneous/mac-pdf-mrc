@@ -22,6 +22,7 @@ Lizenzhinweis zugeordnet werden kann oder für Copyleft-Code kein Quellarchiv fe
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -409,6 +410,10 @@ def main():
     print(f"[OK] Lizenzhinweise: {len(n.components)} Komponenten, {len(n.sources)} Quellarchive (Copyleft)")
     for s in n.sources:
         print(f"     Quelle: {s['name']} {s['version']} ({s['license']})")
+    if os.environ.get("GITHUB_ACTIONS"):
+        print(f"::notice title=Lizenzhinweise::{len(n.components)} Komponenten: "
+              f"{', '.join(c['name'] + ' ' + c['version'] for c in n.components)} – Quellarchive: "
+              f"{', '.join(s['filename'] for s in n.sources)}")
 
 
 if __name__ == "__main__":
