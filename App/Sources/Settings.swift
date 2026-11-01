@@ -84,6 +84,30 @@ struct Profile: Codable, Equatable {
         suffix = try value(.suffix, d.suffix)
     }
 
+    /// Werte auf die gültigen Bereiche begrenzt – dieselben wie RANGES in paperless-mrc (main.py) und in den Tooltips.
+    func clamped() -> Profile {
+        func c<T: Comparable>(_ value: T, _ lo: T, _ hi: T) -> T { min(max(value, lo), hi) }
+        var p = self
+        p.rotateThreshold = c(rotateThreshold, 0, 100)
+        p.deskewMinAngle = c(deskewMinAngle, 0, 2)
+        p.deskewMaxAngle = c(deskewMaxAngle, 0.5, 45)
+        p.deskewConfidence = c(deskewConfidence, 1, 3)
+        p.photoPaperPercent = c(photoPaperPercent, 0, 100)
+        p.photoMinWords = c(photoMinWords, 0, 100)
+        p.vectorMinItems = c(vectorMinItems, 1, 100_000)
+        p.vectorDpi = c(vectorDpi, 150, 600)
+        p.blankInkPercent = c(blankInkPercent, 0, 1)
+        p.blankPaperPercent = c(blankPaperPercent, 0, 100)
+        p.bgDownsample = c(bgDownsample, 1, 4)
+        p.bgRate = c(bgRate, 50, 800)
+        p.maxDpi = maxDpi == 0 ? 0 : c(maxDpi, 150, 1200)
+        p.sharpen = c(sharpen, 0, 300)
+        p.sharpenRadius = c(sharpenRadius, 0.5, 5)
+        p.maskFactor = c(maskFactor, 0.1, 1)
+        p.jobs = c(jobs, 0, 16)
+        return p
+    }
+
     /// Umgebungsvariablen, über die paperless-mrc die Einstellungen liest.
     var environment: [String: String] {
         func flag(_ on: Bool) -> String { on ? "true" : "false" }

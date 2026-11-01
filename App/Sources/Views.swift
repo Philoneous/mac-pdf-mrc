@@ -480,19 +480,19 @@ struct ProfileForm: View {
                 Toggle(isOn: $profile.mixedPdfs) { TipLabel("Also process PDFs with digital pages", tip: "Also compresses the scanned pages of PDFs that contain digital pages as well (e.g. a scan with a generated cover page); digital pages stay unchanged. Off: only PDFs that consist entirely of scans are processed. Default: on.") }
                 Toggle(isOn: $profile.skipPhotos) { TipLabel("Leave photo pages unchanged", tip: "MRC visibly degrades photos, so pages recognized as photos stay unchanged. Default: on.") }
                 TextField(value: $profile.photoPaperPercent,
-                          format: .number.precision(.fractionLength(0...1))) { TipLabel("Text check below paper area (%)", tip: "Pages with less paper area than this (photos, but also text on colored backgrounds) only count as documents if enough text is recognized. Measured: documents on white paper 61–98 %, photos 11–43 %. Default: 50.") }
+                          format: .number.precision(.fractionLength(0...1))) { TipLabel("Text check below paper area (%)", tip: "Share of the page that must look like plain paper for it to count as a document straight away. Pages with less paper (photos, but also forms with shaded boxes) only count as documents if enough text is recognized. Range 0–100 %: 0 = never check, every page counts as a document; 100 = check every page. Documents on white paper typically have 60–98 %, photos 10–45 %. Default: 50.") }
                     .disabled(!profile.skipPhotos)
-                TextField(value: $profile.photoMinWords, format: .number) { TipLabel("Photo below confident words", tip: "A page checked by text recognition counts as a photo if fewer words than this are recognized with high confidence (words with at least 3 characters). Default: 10.") }
+                TextField(value: $profile.photoMinWords, format: .number) { TipLabel("Photo below confident words", tip: "A checked page counts as a photo if fewer words than this are recognized with high confidence (words with at least 3 letters or digits). Range 0–100: 0 = a page never counts as a photo; higher = a page needs more text to be compressed. Default: 10.") }
                     .disabled(!profile.skipPhotos)
                 Toggle(isOn: $profile.vectorPages) { TipLabel("Rasterize vectorized scans and make them searchable", tip: "Some scanner software stores pages as thousands of vector elements instead of an image. Such pages (no image, no text) are rasterized, compressed and made searchable. Default: on.") }
-                TextField(value: $profile.vectorMinItems, format: .number) { TipLabel("Vectorized from elements", tip: "A page without image and text counts as a vectorized scan from this many lines and curves. Default: 1000.") }
+                TextField(value: $profile.vectorMinItems, format: .number) { TipLabel("Vectorized from elements", tip: "A page without image and text counts as a vectorized scan from this many lines and curves. Range 1–100,000: low values also turn simple digital drawings into an image; high values only very detailed pages. Default: 1000.") }
                     .disabled(!profile.vectorPages)
                 Picker(selection: $profile.vectorDpi) {
                     Text(verbatim: "200 dpi").tag(200)
                     Text("300 dpi (default)").tag(300)
                     Text(verbatim: "400 dpi").tag(400)
                     Text(verbatim: "600 dpi").tag(600)
-                } label: { TipLabel("Raster resolution", tip: "Resolution at which vectorized scans are rasterized. Default: 300 dpi.") }
+                } label: { TipLabel("Raster resolution", tip: "Resolution at which vectorized scans are turned into an image. Choice 200–600 dpi: 200 = smallest and fastest; 600 = sharpest for very small print, but larger and slower. Default: 300 dpi.") }
                 .disabled(!profile.vectorPages)
             }
             Section("Text recognition") {
@@ -503,28 +503,28 @@ struct ProfileForm: View {
                 }
                 Toggle(isOn: $profile.rotate) { TipLabel("Rotate pages automatically", tip: "Turns pages that are upside down or sideways the right way up. Only pages without a kept text layer. Default: on.") }
                 TextField(value: $profile.rotateThreshold,
-                          format: .number.precision(.fractionLength(0...1))) { TipLabel("Minimum rotation confidence", tip: "Confidence of Tesseract’s orientation detection required before a page is rotated. Higher = rotates less often. Default: 12.") }
+                          format: .number.precision(.fractionLength(0...1))) { TipLabel("Minimum rotation confidence", tip: "How sure Tesseract’s orientation detection must be before a page is rotated. Range 0–100: 0 = rotate whenever a rotation is suggested (pages may be turned the wrong way); high values = only rotate very clear cases, otherwise the page stays as it is. Default: 12 (as in Paperless-ngx).") }
                     .disabled(!profile.rotate)
                 Toggle(isOn: $profile.rotateCheck) { TipLabel("Check uncertain rotation with text recognition", tip: "If the orientation detection is unsure (below the minimum confidence) but suggests a rotation, the text is recognized in both orientations; the page is only rotated if that gives clearly more confidently recognized words (at least 1.5 times as many). Helps with landscape forms scanned in portrait. Costs extra time only for such pages. Default: on.") }
                     .disabled(!profile.rotate)
                 Toggle(isOn: $profile.deskew) { TipLabel("Deskew", tip: "Straightens slightly skewed scans. Only pages without a kept text layer. Default: on.") }
                 TextField(value: $profile.deskewMinAngle,
-                          format: .number.precision(.fractionLength(0...2))) { TipLabel("Minimum skew (degrees)", tip: "Smaller skews are left as they are. Default: 0.2.") }
+                          format: .number.precision(.fractionLength(0...2))) { TipLabel("Minimum skew (degrees)", tip: "Smaller skews are left as they are, because every rotation slightly softens the image. Range 0–2°: 0 = correct every detected skew; 2 = only clearly visible skews. Default: 0.2.") }
                     .disabled(!profile.deskew)
                 TextField(value: $profile.deskewMaxAngle,
-                          format: .number.precision(.fractionLength(0...1))) { TipLabel("Search range ± (degrees)", tip: "Skew angles are searched within this range. A result at the edge of the range counts as ambiguous (e.g. a page without lines of text) and is not corrected. Default: 5.") }
+                          format: .number.precision(.fractionLength(0...1))) { TipLabel("Search range ± (degrees)", tip: "The skew is searched within ± this angle. A result at the edge of the range counts as ambiguous (e.g. a page without lines of text) and is not corrected. Range 0.5–45°: small = faster, only slightly skewed pages; large = also strongly skewed pages, but slower. Default: 5.") }
                     .disabled(!profile.deskew)
                 TextField(value: $profile.deskewConfidence,
-                          format: .number.precision(.fractionLength(0...2))) { TipLabel("Minimum skew clarity", tip: "Only deskews if the best angle clearly stands out (factor over the median of all angles tested). Prevents logos or stamps on pages with little text from tilting a straight page. Default: 1.3.") }
+                          format: .number.precision(.fractionLength(0...2))) { TipLabel("Minimum skew clarity", tip: "Only deskews if the best angle clearly stands out (factor over the median of all angles tested). Range 1–3: 1 = always deskew – logos or stamps on pages with little text can then tilt a straight page; 3 = only pages with many clear lines of text. Measured: pages without lines of text stay below 1.15, pages with at least one line of text reach 1.4 or more. Default: 1.3.") }
                     .disabled(!profile.deskew)
             }
             Section("Blank pages") {
                 Toggle(isOn: $profile.removeBlank) { TipLabel("Remove blank scanned pages", tip: "Removes scanned pages without content, e.g. empty back sides from duplex scanning. Digital pages are never removed. Default: on.") }
                 TextField(value: $profile.blankInkPercent,
-                          format: .number.precision(.fractionLength(0...4))) { TipLabel("Blank below ink share (%)", tip: "A page counts as blank if less than this share of its area is ink. A page with only a page number is about 0.05 %. Default: 0.005.") }
+                          format: .number.precision(.fractionLength(0...4))) { TipLabel("Blank below ink share (%)", tip: "A page counts as blank if less than this share of its area is ink. Range 0–1 %: 0 = never remove a page; higher = pages with little content are removed too. A page with only a page number has about 0.05 %. Default: 0.005.") }
                     .disabled(!profile.removeBlank)
                 TextField(value: $profile.blankPaperPercent,
-                          format: .number.precision(.fractionLength(0...1))) { TipLabel("Minimum paper area for blank (%)", tip: "A page only counts as blank if at least this share of it is paper. Protects low-contrast photos (e.g. of a wall) from being removed as blank. Default: 90.") }
+                          format: .number.precision(.fractionLength(0...1))) { TipLabel("Minimum paper area for blank (%)", tip: "A page only counts as blank if at least this share of it looks like paper. Protects low-contrast photos (e.g. of a white wall) from being removed. Range 0–100 %: 0 = no protection; 100 = practically no page counts as blank. Default: 90.") }
                     .disabled(!profile.removeBlank)
             }
             Section("Quality and size") {
@@ -533,28 +533,28 @@ struct ProfileForm: View {
                     Text("1/2 (default)").tag(2)
                     Text(verbatim: "1/3").tag(3)
                     Text(verbatim: "1/4").tag(4)
-                } label: { TipLabel("Background resolution", tip: "Resolution of the background layer (paper, colored areas, pictures) relative to the scan. Text and lines always stay at full resolution. Default: 1/2.") }
+                } label: { TipLabel("Background resolution", tip: "Resolution of the background layer (paper, colored areas, pictures on the page) relative to the scan; text and lines always keep full resolution. Choice full to 1/4: full = best colors and pictures, files about 1.7 times as large, text no more readable; 1/4 = smallest, colored areas and pictures become blocky. Default: 1/2.") }
                 LabeledContent {
                     Slider(value: $profile.bgRate, in: 50...800, step: 25)
-                } label: { TipLabel(verbatim: L("Compression rate: %lld", Int(profile.bgRate)), tip: "JPEG 2000 compression of the background layer. Higher = smaller file; colored areas and light-gray text suffer. Default: 200.") }
-                Toggle(isOn: $profile.fitA4) { TipLabel("Correct wrong page sizes to A4", tip: "Scales scanned pages with implausible page sizes (e.g. phone scans stored as 61 × 86 cm) to A4, so they display and print at a normal size. Default: on.") }
+                } label: { TipLabel(verbatim: L("Compression rate: %lld", Int(profile.bgRate)), tip: "JPEG 2000 compression of the background layer. Range 50–800: 50 = barely compressed, large files; 800 = very small, colored areas and pictures get blotchy. Text that is part of the sharp text layer is not affected. Default: 200.") }
+                Toggle(isOn: $profile.fitA4) { TipLabel("Correct wrong page sizes to A4", tip: "Scales scanned pages with an implausible page size (e.g. phone scans stored several times larger than A4) to A4, so they display and print at a normal size. Default: on.") }
                 Picker(selection: $profile.maxDpi) {
                     Text("Off (default)").tag(0)
                     Text(verbatim: "200 dpi").tag(200)
                     Text(verbatim: "300 dpi").tag(300)
                     Text(verbatim: "400 dpi").tag(400)
-                } label: { TipLabel("Maximum resolution", tip: "Downscales scans with a higher resolution before compressing: faster and smaller, but the finest details are lost. Default: off.") }
+                } label: { TipLabel("Maximum resolution", tip: "Downscales scans with a higher resolution before compressing: faster and smaller, but the finest details are lost. Choice: off or 200–400 dpi. Measured with a 300-dpi scan: 200 dpi halves the file, but digits in print of 6 pt and smaller start being misread. Default: off (the scan keeps its resolution).") }
                 LabeledContent {
                     Slider(value: Binding(get: { Double(profile.sharpen) }, set: { profile.sharpen = Int($0) }),
                            in: 0...300, step: 25)
-                } label: { TipLabel(verbatim: profile.sharpen == 0 ? L("Sharpening: off") : L("Sharpening: %lld %%", profile.sharpen), tip: "Sharpens before compressing so that light-gray, thin text stays crisp. 0 = off. Default: 150 %.") }
+                } label: { TipLabel(verbatim: profile.sharpen == 0 ? L("Sharpening: off") : L("Sharpening: %lld %%", profile.sharpen), tip: "Sharpens the scan before compressing so that faint, thin text stays crisp and complete. Range 0–300 %: 0 = off, faint text can look patchy; high values make text bolder but also emphasize noise and stains – from 200 % text recognition makes slightly more errors. Default: 150 %.") }
                 TextField(value: $profile.sharpenRadius,
-                          format: .number.precision(.fractionLength(0...1))) { TipLabel("Sharpening radius (px at 200 dpi)", tip: "Radius of the sharpening in pixels at 200 dpi; scaled with the resolution of the scan. Default: 1.5.") }
+                          format: .number.precision(.fractionLength(0...1))) { TipLabel("Sharpening radius (px at 200 dpi)", tip: "Width of the sharpening in pixels at 200 dpi; scaled with the resolution of the scan. Range 0.5–5: small = only fine edges, thin strokes can break up; large = visible halos around letters. Default: 1.5.") }
                     .disabled(profile.sharpen == 0)
                 LabeledContent {
                     Slider(value: $profile.maskFactor, in: 0.1...1.0, step: 0.05)
-                } label: { TipLabel(verbatim: L("Text mask factor: %.2f", profile.maskFactor), tip: "Decides which pixels go into the sharp text layer. Smaller = light-gray text also stays sharp, but more specks. 1 = recode_pdf default. Default: 0.5.") }
-                Stepper(value: $profile.jobs, in: 0...16) { TipLabel(verbatim: profile.jobs == 0 ? L("Simultaneous pages: automatic") : L("Simultaneous pages: %lld", profile.jobs), tip: "Number of pages processed at the same time. Automatic = number of processor cores.") }
+                } label: { TipLabel(verbatim: L("Text mask factor: %.2f", profile.maskFactor), tip: "Decides which pixels go into the sharp text layer at full resolution; everything else ends up in the lower-resolution background. Range 0.1–1.0: smaller = faint text and thin lines also stay sharp, but more specks of dirt are kept; 1.0 = setting of the underlying tool recode_pdf, faint text may become blurry. Default: 0.5.") }
+                Stepper(value: $profile.jobs, in: 0...16) { TipLabel(verbatim: profile.jobs == 0 ? L("Simultaneous pages: automatic") : L("Simultaneous pages: %lld", profile.jobs), tip: "Number of pages processed at the same time. Range: automatic or 1–16; more = faster on Macs with many cores, but needs more memory. Default: automatic (number of processor cores).") }
             }
             Section("Output") {
                 Picker(selection: $profile.output) {
@@ -572,5 +572,10 @@ struct ProfileForm: View {
             }
         }
         .formStyle(.grouped)
+        // Eingaben außerhalb des gültigen Bereichs sofort auf den Bereich setzen (Tooltips nennen ihn)
+        .onChange(of: profile) { value in
+            let valid = value.clamped()
+            if valid != value { profile = valid }
+        }
     }
 }

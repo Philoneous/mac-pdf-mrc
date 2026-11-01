@@ -1,17 +1,35 @@
-# PDF MRC für macOS
+# PDF MRC – gescannte PDFs auf dem Mac verkleinern
 
 *[English](README.md) · Deutsch*
 
-<img src="App/Icon/icon.svg" width="96" align="right" alt="">
+<img src="App/Icon/icon.svg" width="96" align="right" alt="App-Symbol von PDF MRC">
 
-Kleine Mac-App, die gescannte PDFs per *Mixed Raster Content* (MRC) stark verkleinert – manuell in der App oder per
-Rechtsklick im Finder – und sie an einen [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx)-Server
-schicken kann.
+**PDF MRC ist eine kostenlose Mac-App, die gescannte PDFs meist 5- bis 30-mal kleiner macht – per Rechtsklick im
+Finder.** Schrift bleibt scharf und durchsuchbar, Farben bleiben erhalten. Auf Wunsch schickt sie Dokumente direkt an
+deinen [Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx)-Server.
 
-Die Verarbeitung übernimmt [paperless-mrc](https://github.com/Philoneous/paperless-mrc) – dasselbe Skript, das in
-Paperless-ngx neue Scans komprimiert –, das wiederum [archive-pdf-tools](https://github.com/internetarchive/archive-pdf-tools)
-des Internet Archive nutzt. Was dabei genau passiert (nur gescannte Seiten, leere Seiten entfernen, Textebene
-übernehmen oder per Tesseract erkennen, falsche Seitengrößen korrigieren, Ergebnis prüfen), steht dort im README.
+- **Rechtsklick → Schnellaktionen → PDF komprimieren (MRC)** auf eine oder viele PDFs; die App arbeitet im
+  Hintergrund und meldet sich, wenn sie fertig ist.
+- **Durchsuchbare PDFs:** Seiten ohne Text werden per Texterkennung (OCR, Tesseract) erfasst; Deutsch und Englisch sind
+  dabei, weitere Sprachen lassen sich nachladen.
+- **Räumt Scans auf:** entfernt leere Seiten, dreht auf dem Kopf stehende Seiten richtig herum, begradigt schiefe Seiten.
+- **Sicher:** Fotos, digitale Seiten und digital signierte PDFs bleiben unberührt; ein Ergebnis wird nur behalten, wenn
+  es geprüft und wirklich kleiner ist. Standardmäßig bleibt das Original unverändert – die komprimierte Kopie liegt
+  daneben.
+- **Paperless-ngx:** PDFs per Rechtsklick an deinen Paperless-Server senden, komprimiert oder unverändert.
+- Läuft vollständig auf deinem Mac – keine Cloud, kein Konto.
+
+Beispiel: Ein einseitiger Farbbrief, gescannt mit 300 dpi, schrumpft von etwa 1 MB auf 130 KB; vier Handyscans mit
+zusammen sechs Seiten gingen von 12,6 MB auf 0,4 MB.
+
+## So funktioniert es
+
+PDF MRC nutzt *Mixed Raster Content* (MRC), das Verfahren hinter kompakten PDF-Archiven wie dem des Internet Archive.
+Eine gescannte Seite wird aufgeteilt in eine scharfe, verlustfrei komprimierte Textebene in voller Auflösung und einen
+Hintergrund (Papier, Farbflächen, Bilder) in geringerer Auflösung. Ein normaler Scan speichert jede Seite als ein großes
+Foto; MRC behält die Details nur dort, wo sie zählen. Die Verarbeitung übernimmt
+[paperless-mrc](https://github.com/Philoneous/paperless-mrc), das auch in Paperless-ngx läuft, mit
+[archive-pdf-tools](https://github.com/internetarchive/archive-pdf-tools) des Internet Archive.
 
 ## Installation
 
@@ -20,174 +38,139 @@ des Internet Archive nutzt. Was dabei genau passiert (nur gescannte Seiten, leer
 3. Erster Start: Die App ist nicht von Apple beglaubigt, macOS blockiert sie deshalb einmal. *Systemeinstellungen →
    Datenschutz & Sicherheit* öffnen, nach unten scrollen und **Dennoch öffnen** klicken.
 
-Voraussetzungen: macOS 13 oder neuer, Apple-Chip. Alles, was die App braucht (Python, paperless-mrc, Tesseract,
-OpenJPEG, jbig2enc), steckt in der App – Homebrew ist nicht nötig. Das Ergebnis prüft die App zusätzlich zu den
-Prüfungen von paperless-mrc (Seitenzahl, Textebene) mit dem PDF-Darsteller von macOS: Jede Seite muss sich öffnen
-und zeichnen lassen.
+Voraussetzungen: macOS 13 oder neuer auf einem Mac mit Apple-Chip (M1 oder neuer). Alles Nötige ist enthalten – kein
+Homebrew, kein Python, keine weitere Installation.
 
-**Updates** installiert die App automatisch (Sparkle): Sie sucht beim Start – auch wenn eine Schnellaktion sie im
-Hintergrund startet – und alle vier Stunden, solange sie läuft, lädt neue Versionen im Hintergrund und installiert sie
-beim Beenden. Unter *Einstellungen* lässt sich *automatisch installieren*, *vor der Installation fragen* oder *nur
-manuell* wählen und sofort suchen (auch *PDF MRC → Nach Updates suchen …*). Updates sind signiert (EdDSA) und werden
-vor der Installation geprüft.
+**Updates** installieren sich selbst: Die App sucht beim Start und alle vier Stunden, lädt neue Versionen im
+Hintergrund und installiert sie beim Beenden. Unter *Einstellungen* lässt sich *automatisch installieren*, *vor der
+Installation fragen* oder *nur manuell* wählen. Updates sind signiert und werden vor der Installation geprüft.
 
-## Die App
+## Die App benutzen
 
-Die Seitenleiste links führt zu den Bereichen *Manuell umwandeln*, *Kontextmenü*, *Paperless*, *Verlauf*,
-*Einstellungen* und *Info*.
+Die Seitenleiste führt zu *Manuell umwandeln*, *Kontextmenü*, *Paperless*, *Verlauf*, *Einstellungen* und *Info*.
 
-**Manuell umwandeln:** PDF hineinziehen oder auswählen, Einstellungen anpassen, *Umwandeln*. Das Ergebnis und alle
-Meldungen von paperless-mrc erscheinen darunter, *Im Finder zeigen* öffnet die neue Datei.
+**Manuell umwandeln:** eine PDF ins Fenster ziehen oder auswählen, bei Bedarf Einstellungen anpassen, *Umwandeln*.
+Ergebnis und ein ausführliches Protokoll erscheinen darunter; *Im Finder zeigen* öffnet die neue Datei.
 
-**Kontextmenü:** Schnellaktion *PDF komprimieren (MRC)* im Finder ein- und ausschalten und ihre Einstellungen
-festlegen (unabhängig von der manuellen Umwandlung; *Einstellungen aus „Manuell umwandeln“ übernehmen* kopiert sie
-herüber). Rechtsklick auf ein oder mehrere PDFs → *Schnellaktionen*. Die Schnellaktion übergibt die Dateien an die App und ist
-sofort fertig; die App arbeitet im Hintergrund (ohne Dock-Symbol), zeigt währenddessen ein Symbol in der Menüleiste –
-ein Klick zeigt den Fortschritt jeder Datei und die letzten Ergebnisse – und meldet jedes Ergebnis als Mitteilung mit
-*Im Finder zeigen* / *In Paperless öffnen*. macOS fragt einmal, ob PDF MRC Mitteilungen senden darf; ohne Erlaubnis
-nutzt die App einfache Mitteilungen. Ist alles erledigt, verschwindet das Symbol und die App beendet sich (außer ihr
-Fenster ist offen).
+**Kontextmenü:** die Finder-Schnellaktion *PDF komprimieren (MRC)* ein- oder ausschalten und ihre Einstellungen wählen.
+Dann im Finder eine oder mehrere PDFs rechts anklicken → *Schnellaktionen* → *PDF komprimieren (MRC)*. Die App arbeitet
+im Hintergrund, zeigt den Fortschritt in der Menüleiste und meldet jedes Ergebnis als Mitteilung (macOS fragt einmal um
+Erlaubnis).
 
-**Paperless:** Adresse des Paperless-ngx-Servers und API-Token (in Paperless unter *Mein Profil*), *Speichern und
-Verbindung testen*, dazu zwei weitere Schnellaktionen:
+**Paperless:** Adresse deines Paperless-ngx-Servers und API-Token eintragen (in Paperless unter *Mein Profil*), dann
+*Speichern und Verbindung testen*. Zwei weitere Schnellaktionen stehen dann bereit:
 
-- **An Paperless senden** – schickt das PDF unverändert; Paperless (mit paperless-mrc) komprimiert es dort.
-- **Komprimieren und an Paperless senden** – komprimiert erst auf dem Mac (Einstellungen aus dem Reiter *Kontextmenü*)
-  und schickt das Ergebnis, oder das Original, wenn es sich nicht verkleinern lässt. paperless-mrc auf dem Server lässt
-  eine solche Datei unverändert, es wird also nichts doppelt umgewandelt.
+- **An Paperless senden** – schickt die PDF unverändert; ist paperless-mrc auf dem Server installiert, komprimiert es
+  sie dort.
+- **Komprimieren und an Paperless senden** – komprimiert zuerst auf dem Mac und schickt das Ergebnis. Sinnvoll bei
+  langsamem Server oder langsamem Upload, z. B. unterwegs.
 
-Die Datei auf dem Mac bleibt in beiden Fällen unverändert. Die App lädt über `/api/documents/post_document/` hoch,
-wartet bis zu zehn Minuten, bis Paperless fertig ist (`/api/tasks/`), und meldet das Ergebnis als Mitteilung:
-angelegtes Dokument (mit Nummer), Duplikat oder Fehler. Verbindung und Token werden vor dem Hochladen geprüft. Die meiste
-Zeit vergeht meist auf dem Server (paperless-mrc und die Verarbeitung in Paperless); der Verlauf zeigt, wie lange jeder
-Schritt gedauert hat.
+Die Datei auf deinem Mac bleibt in beiden Fällen unverändert. Das Token liegt im macOS-Schlüsselbund. Unterwegs HTTPS
+oder ein VPN nutzen – mit `http://` gehen Token und Dokumente unverschlüsselt durchs Netz (die App weist darauf hin).
+Selbstsignierte Zertifikate werden nicht unterstützt.
 
-- Das Token liegt im macOS-Schlüsselbund. Nach einem Update fragt macOS einmal, ob die App weiter darauf zugreifen darf
-  (*Immer erlauben*) – die App ist ad hoc signiert, jede Version hat also eine neue Signatur.
-- Im Heimnetz fragt macOS beim ersten Mal, ob die App auf Geräte im lokalen Netzwerk zugreifen darf.
-- **Von unterwegs** HTTPS (z. B. Reverse Proxy mit Zertifikat) oder ein VPN nutzen – mit `http://` gehen Token und
-  Dokumente unverschlüsselt über das Netz; die App weist darauf hin. Selbstsignierte Zertifikate werden nicht
-  unterstützt.
+**Verlauf:** die letzten 50 Aufträge mit Ergebnis, Dateigrößen, Dauer jedes Schritts und vollständigem Protokoll (z. B.
+welche Seiten als Foto erkannt, gedreht, begradigt oder als leer entfernt wurden).
 
-**Sprachen:** Deutsch und Englisch sind enthalten. Weitere Tesseract-Sprachen (z. B. `fra`, `pol`, `chi_sim`) lassen
-sich im Sprachfeld der Einstellungen eintragen – die App zeigt fehlende Sprachen an und lädt sie mit *Laden* aus
-[tessdata_fast](https://github.com/tesseract-ocr/tessdata_fast). Sie liegen in
-`~/Library/Application Support/mac-pdf-mrc/tessdata`.
+**OCR-Sprachen:** Deutsch und Englisch sind enthalten. Weitere Tesseract-Sprachen (z. B. `fra`, `ita`, `pol`) im
+Sprachfeld der Einstellungen ergänzen; fehlende lädt die App aus
+[tessdata_fast](https://github.com/tesseract-ocr/tessdata_fast) nach.
 
-**Verlauf:** die letzten 50 Umwandlungen – manuell, über das Kontextmenü und an Paperless gesendet – mit Ergebnis,
-Größen, Seitenzahl, Dauer jedes Schritts (Komprimieren, Hochladen, Verarbeitung in Paperless) und dem vollständigen
-Protokoll von paperless-mrc mit den Details jeder Seite (Fotoseiten übersprungen, Seiten gedreht oder begradigt, leere
-Seiten entfernt). Je Eintrag *Im Finder zeigen*, *In Paperless öffnen* und *Protokoll kopieren*; *Verlauf löschen …*
-entfernt alle Einträge.
+**Sprache der App:** Deutsch oder Englisch, wählbar unter *Einstellungen*.
 
-**Sprache:** Englisch oder Deutsch, unter *Einstellungen* wählbar (*Systemsprache*: Deutsch, wenn der Mac Deutsch
-verwendet, sonst Englisch). Sie gilt auch für die Namen der Schnellaktionen im Finder und das Protokoll von
-paperless-mrc; macOS lädt die Sprache beim Start der App, nach einem Wechsel bietet die App daher *Jetzt neu starten*
-an.
+### Einstellungen
 
-### Einstellungen (je Profil, *Standardwerte wiederherstellen* setzt sie zurück)
+Die Standardwerte sind auf die beste Lesbarkeit des Ergebnisses ausgelegt – ändern musst du nichts. Jede Einstellung
+hat in der App eine ⓘ-Erklärung mit ihrem Bereich und der Bedeutung des unteren und oberen Endes.
+*Standardwerte wiederherstellen* setzt alles zurück.
 
-Jede Einstellung zeigt diese Erklärung als Tooltip, wenn man den Mauszeiger darüber hält.
+| Einstellung | Standard | Bereich | Wirkung |
+|---|---|---|---|
+| **Seitenauswahl** | | | |
+| Auch PDFs mit digitalen Seiten bearbeiten | an | | Komprimiert die gescannten Seiten gemischter PDFs; digitale Seiten bleiben unverändert |
+| Fotoseiten unverändert lassen | an | | MRC würde Fotos sichtbar verschlechtern |
+| Texterkennung prüft unter Papierfläche | 50 % | 0–100 % | Seiten mit weniger Papier (Fotos, Formulare mit hinterlegten Feldern) gelten nur als Dokument, wenn genug Text erkannt wird |
+| Foto unter sicher erkannten Wörtern | 10 | 0–100 | Weniger sicher erkannte Wörter → die Seite gilt als Foto |
+| Vektorisierte Scans rastern und durchsuchbar machen | an / 1000 Elemente / 300 dpi | 1–100.000 / 200–600 dpi | Manche Scanner speichern Seiten als Tausende Zeichenelemente; diese werden in ein Bild umgewandelt und durchsuchbar gemacht |
+| **Texterkennung** | | | |
+| Vorhandene Textebene übernehmen | an | | Aus = Text immer neu erkennen |
+| Sprachen | `deu+eng` | | Tesseract-Sprachen, mit `+` verbunden |
+| Seiten automatisch drehen / Mindestsicherheit für Drehung | an / 12 | 0–100 | Höher = nur eindeutige Fälle drehen |
+| Unsichere Drehung per Texterkennung prüfen | an | | Entscheidet unklare Fälle durch Vergleich beider Lagen – hilft bei Querformat-Formularen |
+| Schräglage begradigen / Erst ab Schräglage / Suchbereich / Mindestdeutlichkeit | an / 0,2° / ±5° / 1,3 | 0–2° / 0,5–45° / 1–3 | Begradigt schiefe Seiten; unklare Fälle bleiben, wie sie sind |
+| **Leere Seiten** | | | |
+| Leere gescannte Seiten entfernen | an | | z. B. leere Rückseiten beim beidseitigen Scannen |
+| Leer unter Tintenanteil | 0,005 % | 0–1 % | Eine Seite mit nur einer Seitenzahl hat etwa 0,05 % und bleibt |
+| Leer nur ab Papierfläche | 90 % | 0–100 % | Schützt kontrastarme Fotos vor dem Entfernen |
+| **Qualität und Größe** | | | |
+| Hintergrundauflösung | 1/2 | voll – 1/4 | Schrift behält immer die volle Auflösung |
+| Kompressionsrate | 200 | 50–800 | Höher = kleiner; Farbflächen und Bilder werden fleckig |
+| Falsche Seitengrößen auf A4 korrigieren | an | | z. B. Handyscans, die ein Vielfaches von A4 groß gespeichert sind |
+| Höchstauflösung | aus | 200–400 dpi | Höher aufgelöste Scans verkleinern: schneller und kleiner, feinste Details gehen verloren |
+| Nachschärfen / Radius Nachschärfen | 150 % / 1,5 | 0–300 % / 0,5–5 | Hält blasse, dünne Schrift scharf |
+| Textmaske, Faktor | 0,5 | 0,1–1,0 | Kleiner = auch blasse Schrift bleibt scharf, aber mehr Schmutzpunkte |
+| Gleichzeitige Seiten | automatisch | 1–16 | Automatisch = Anzahl der Prozessorkerne |
+| **Ausgabe** | | | |
+| Ergebnis | Kopie | | *Als Kopie neben dem Original speichern* (`Rechnung (komprimiert).pdf`) oder *Original ersetzen* (es kommt in den Papierkorb) |
 
-| Einstellung | Standard | Wirkung |
-|---|---|---|
-| **Seitenauswahl** | | |
-| Auch PDFs mit digitalen Seiten bearbeiten | an | digitale Seiten bleiben unverändert; aus = nur reine Scan-PDFs |
-| Fotoseiten unverändert lassen | an | MRC verschlechtert Fotos sichtbar |
-| Texterkennung prüft unter Papierfläche (%) | 50 | Seiten mit weniger Papierfläche (Fotos, farbig hinterlegter Text) gelten nur mit genug erkanntem Text als Dokument |
-| Foto unter sicher erkannten Wörtern | 10 | Wörter mit ≥ 3 Zeichen und hoher Erkennungssicherheit |
-| Vektorisierte Scans rastern | an | Seiten ohne Bild und Text aus Tausenden Vektorelementen werden gerastert und durchsuchbar |
-| Vektorisiert ab Elementen / Rasterauflösung | 1000 / 300 dpi | |
-| **Texterkennung** | | |
-| Vorhandene Textebene übernehmen | an | aus = immer neu mit Tesseract erkennen |
-| Sprachen | `deu+eng` | Tesseract-Sprachen; weitere nachladbar |
-| Seiten automatisch drehen / Mindestsicherheit | an / 12 | nur Seiten ohne übernommene Textebene |
-| Unsichere Drehung per Texterkennung prüfen | an | ist sich die Ausrichtungserkennung unsicher, schlägt aber eine Drehung vor, wird in beiden Lagen erkannt; gedreht nur bei mindestens 1,5-mal so vielen sicheren Wörtern (z. B. hochkant gescannte Querformat-Formulare) |
-| Schräglage begradigen / erst ab / Suchbereich ± | an / 0,2° / 5° | Ergebnis am Rand des Suchbereichs gilt als unklar → keine Korrektur |
-| Mindestdeutlichkeit der Schräglage | 1,3 | nur begradigen, wenn sich der beste Winkel deutlich abhebt; verhindert, dass Logos oder Stempel auf textarmen Seiten eine gerade Seite schief drehen |
-| **Leere Seiten** | | |
-| Leere gescannte Seiten entfernen | an | |
-| Leer unter Tintenanteil (%) | 0,005 | eine Seite mit nur einer Seitenzahl liegt bei ca. 0,05 % |
-| Leer nur ab Papierfläche (%) | 90 | schützt kontrastarme Fotos davor, als leer entfernt zu werden |
-| **Qualität und Größe** | | |
-| Hintergrundauflösung | 1/2 | Text und Linien bleiben immer in voller Auflösung |
-| Kompressionsrate | 200 | höher = kleiner; Farbflächen und hellgraue Schrift leiden |
-| Falsche Seitengrößen auf A4 korrigieren | an | z. B. Handyscans mit 61 × 86 cm |
-| Nachschärfen / Radius | 150 % / 1,5 px | hellgraue, dünne Schrift bleibt scharf; 0 = aus |
-| Textmaske, Faktor | 0,5 | kleiner = auch hellgraue Schrift bleibt scharf; 1 = recode_pdf-Standard |
-| Höchstauflösung | aus | höher aufgelöste Scans herunterskalieren (z. B. 300 dpi): schneller und kleiner |
-| Gleichzeitige Seiten | automatisch | Anzahl der Prozessorkerne |
-| **Ausgabe** | | |
-| Ergebnis | Kopie | *Als Kopie neben dem Original speichern* (`<Name> (komprimiert).pdf`, Zusatz änderbar) oder *Original ersetzen* (Original in den Papierkorb) |
+Immer aktiv: Digital signierte PDFs bleiben unverändert, und ein Ergebnis wird nur gespeichert, wenn es geprüft und
+kleiner ist.
 
-Nicht abschaltbar (Sicherheit): digital signierte PDFs bleiben unverändert, und ein Ergebnis entsteht nur, wenn es
-geprüft und kleiner ist. Sonst entsteht keine Datei und das Original bleibt, wie es ist; eine schon vorhandene Kopie
-wird nicht überschrieben. Gespeichert werden die Einstellungen in
-`~/Library/Application Support/mac-pdf-mrc/settings.json`.
+## Fragen und Probleme
 
-## Hinweise
+- **Die Schnellaktion erscheint nicht:** *Systemeinstellungen → Tastatur → Tastaturkurzbefehle → Dienste* (bzw.
+  *Erweiterungen → Finder*) prüfen.
+- **macOS fragt nach Zugriff** auf Schreibtisch, Dokumente oder Downloads, wenn die App dort zum ersten Mal eine Datei
+  liest – erlauben.
+- **Schlüsselbund-Abfrage nach einem Update:** Die App ist nicht beglaubigt, deshalb hat jede Version eine neue
+  Signatur; einmal *Immer erlauben* wählen.
+- **Intel-Macs** werden nicht unterstützt (für einen nötigen Baustein, archive-pdf-tools, gibt es keine Intel-Fassung).
+- **Deinstallieren:** *PDF MRC* aus Programme löschen, die Schnellaktionen in `~/Library/Services` (*Compress PDF (MRC)*,
+  *Send to Paperless*, *Compress and Send to Paperless*) und den Ordner `~/Library/Application Support/mac-pdf-mrc`.
 
-- Erscheint eine Schnellaktion nicht: *Systemeinstellungen → Tastatur → Tastaturkurzbefehle → Dienste* prüfen.
-- Beim ersten Zugriff auf Schreibtisch, Dokumente oder Downloads fragt macOS nach der Erlaubnis.
-- **Deinstallieren:** *PDF MRC* aus Programme löschen, die Schnellaktionen in `~/Library/Services` (Dateinamen englisch:
-  *Compress PDF (MRC)*, *Send to Paperless*, *Compress and Send to Paperless*) und
-  `~/Library/Application Support/mac-pdf-mrc`.
-- Intel-Macs werden nicht unterstützt (archive-pdf-tools gibt es nicht als fertiges Intel-Paket).
+### Alternative: Homebrew-Installer
 
-### Alternative: Homebrew-Installer (Backup)
-
-Der bisherige Weg funktioniert weiterhin und baut die App lokal (braucht [Homebrew](https://brew.sh)); aktualisiert wird
-durch erneutes Ausführen, eine eingebaute Update-Funktion gibt es dabei nicht:
+Ein Skript, das die App lokal baut (braucht [Homebrew](https://brew.sh); keine automatischen Updates):
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Philoneous/mac-pdf-mrc/main/install.sh)"
 ```
 
-Er installiert nach `~/Applications/PDF MRC.app`. **Wechsel zur DMG-Version:** `~/Applications/PDF MRC.app` löschen,
-`uv tool uninstall paperless-mrc` ausführen, die DMG-Version installieren und einmal öffnen (sie legt die
-Schnellaktionen neu an).
-
-## Entwicklung
-
-`build/build_app.sh dist --standalone` baut die eigenständige App (zum Bauen nötig: Homebrew, uv, Netz). Es
-entfernt alles, was paperless-mrc nie lädt (gemessen mit einem Import-Protokoll über dessen Testsuite), erzeugt die
-Hinweise zu Drittkomponenten (`build/notices.py`) und prüft, dass jedes mitgelieferte Programm und jede Bibliothek alle
-geladenen Bibliotheken findet (`build/check_bundle.py`);
-`build/make_dmg.sh dist dist/PDF-MRC.dmg` packt sie. GitHub Actions (`.github/workflows/macos.yml`) baut und testet bei
-jedem Push auf `main`, zwei Jobs parallel:
-
-- **App (DMG):** bauen, DMG, aus dem DMG nach `/Applications` installieren, **Homebrew ausblenden**, dann End-to-End-Tests
-  mit dem Python der App: Kontextmenü-Modus auf Englisch und Deutsch (`ci/test_app.py`), Sprache nachladen, Senden an
-  einen Ersatzserver, der sich wie Paperless-ngx 3.3.0 verhält (`ci/test_paperless.py`, `ci/paperless_mock.py`),
-  Bildschirmfotos und ein echtes **Sparkle-Update** von einem lokalen Feed (`ci/test_update.sh`).
-- **Homebrew-Installer (Backup):** `install.sh` aus dem Checkout und dieselben Tests.
-
-`ci/check_strings.py` prüft, dass jeder Text eine englische Übersetzung hat. Schlägt ein Schritt fehl, hängen seine
-letzten Ausgabezeilen als Annotation am Lauf; bei manuellem Start landen zusätzlich die Bildschirmfotos im Branch
-`ci-screenshots`.
-
-**Releases:** *Actions → macOS → Run workflow* auf `main` mit einer Version (z. B. `1.0.0`) starten oder ein Tag
-`vX.Y.Z` pushen. Der Workflow baut und testet wie oben, danach signiert `build/release.sh`
-das DMG für Sparkle (Repository-Secret `SPARKLE_PRIVATE_KEY`, geprüft gegen `SUPublicEDKey` in der App), schreibt
-`appcast.xml`, lädt die Quellarchive der mitgelieferten Copyleft-Komponenten (siehe *Lizenz*) ins Release
-`third-party-sources` und legt das GitHub-Release an. Installierte Apps finden es über
-`https://github.com/Philoneous/mac-pdf-mrc/releases/latest/download/appcast.xml`. Ein normaler Push löst kein Update
-aus.
-
-Die App ruft paperless-mrc so auf wie Paperless: `DOCUMENT_WORKING_PATH` auf eine Kopie, Einstellungen über
-`PAPERLESS_OCR_*` und `MRC_*`, Ergebnis aus der maschinenlesbaren Zeile `paperless-mrc-result: {…}`.
+Es installiert nach `~/Applications/PDF MRC.app`. Wechsel zur DMG-Version: `~/Applications/PDF MRC.app` löschen,
+`uv tool uninstall paperless-mrc` ausführen, die DMG-Version installieren und einmal öffnen.
 
 ## Unterstützen
 
-PDF MRC ist kostenlos. Wenn dir die App Zeit oder Speicherplatz spart, kannst du die Entwicklung auf
-[Ko-fi](https://ko-fi.com/Philoneous) unterstützen (PayPal oder Karte, ohne Konto) – auch über den Knopf *Sponsor* auf
-GitHub oder *Info → Auf Ko-fi unterstützen* in der App. Beiträge sind freiwillig und keine steuerlich absetzbaren
-Spenden.
+PDF MRC ist kostenlos. Wenn es dir Zeit oder Speicherplatz spart, kannst du die Entwicklung auf
+[Ko-fi](https://ko-fi.com/Philoneous) unterstützen (PayPal oder Karte, kein Konto nötig) – auch über *Info → Auf
+Ko-fi unterstützen* in der App. Beiträge sind freiwillig und keine steuerlich absetzbaren Spenden.
+
+## Entwicklung
+
+`build/build_app.sh dist --standalone` baut die eigenständige App (braucht Homebrew, uv und Netz), entfernt alles, was
+paperless-mrc nie lädt, erzeugt die Hinweise zu Drittkomponenten (`build/notices.py`) und prüft, dass jedes
+mitgelieferte Programm alle seine Bibliotheken findet (`build/check_bundle.py`); `build/make_dmg.sh dist
+dist/PDF-MRC.dmg` packt sie.
+
+GitHub Actions (`.github/workflows/macos.yml`) baut und testet jeden Push auf `main`: Die App wird aus dem DMG
+installiert, Homebrew ausgeblendet und dann mit ihrem eigenen Python durchgetestet – Kontextmenü auf Englisch und
+Deutsch (`ci/test_app.py`), Sprach-Download, Senden an einen nachgebauten Paperless-ngx-3.3.0-Server
+(`ci/test_paperless.py`), Bildschirmfotos und ein echtes Sparkle-Update (`ci/test_update.sh`). Ein zweiter Job testet
+den Homebrew-Installer. `ci/check_strings.py` prüft, dass jeder Text übersetzt ist.
+
+**Releases:** *Actions → macOS → Run workflow* mit einer Version (z. B. `1.2.0`). `build/release.sh` signiert das DMG
+für Sparkle (Secret `SPARKLE_PRIVATE_KEY`), schreibt `appcast.xml`, lädt die Quellarchive der mitgelieferten
+Copyleft-Komponenten ins Release `third-party-sources` und veröffentlicht das Release. Installierte Apps finden Updates
+über `https://github.com/Philoneous/mac-pdf-mrc/releases/latest/download/appcast.xml`.
+
+Die App ruft paperless-mrc so auf wie Paperless: `DOCUMENT_WORKING_PATH` auf eine Kopie, Einstellungen über
+`PAPERLESS_OCR_*` und `MRC_*`, Ergebnis aus der Zeile `paperless-mrc-result: {…}`. Statt mit Poppler prüft sie das
+Ergebnis mit dem PDF-Darsteller von macOS.
 
 ## Lizenz
 
 Copyright © 2026 Philoneous. GNU Affero General Public License v3.0 oder später (`AGPL-3.0-or-later`), siehe
-[LICENSE](LICENSE) – wie paperless-mrc.
+[LICENSE](LICENSE).
 
 **Mitgelieferte Komponenten.** Die App enthält Software Dritter, jeweils unter eigener Lizenz – u. a.
 [archive-pdf-tools](https://github.com/internetarchive/archive-pdf-tools) und
@@ -196,10 +179,9 @@ Copyright © 2026 Philoneous. GNU Affero General Public License v3.0 oder späte
 [pikepdf](https://github.com/pikepdf/pikepdf) (MPL-2.0), [Tesseract](https://github.com/tesseract-ocr/tesseract)
 (Apache-2.0), [Python](https://www.python.org) ([python-build-standalone](https://github.com/astral-sh/python-build-standalone)),
 NumPy, SciPy, scikit-image, Pillow, OpenJPEG, jbig2enc, Leptonica und [Sparkle](https://sparkle-project.org). Die
-vollständige Liste mit Versionen, Lizenzen und Lizenztexten entsteht beim Bauen: in der App unter
-*Info → Hinweise zu Drittkomponenten* (`PDF MRC.app/Contents/Resources/Licenses`) und an jedem Release als
-`THIRD-PARTY-NOTICES.txt`. Die genauen Quellarchive aller Copyleft-Komponenten liegen im Release
+vollständige Liste mit Versionen, Lizenzen und Lizenztexten steht in der App unter *Info → Hinweise zu
+Drittkomponenten* und hängt an jedem Release als `THIRD-PARTY-NOTICES.txt`. Die genauen Quellarchive aller
+Copyleft-Komponenten liegen im Release
 [third-party-sources](https://github.com/Philoneous/mac-pdf-mrc/releases/tag/third-party-sources).
 
-PDF MRC ist ein unabhängiges Projekt und steht in keiner Verbindung zu Paperless-ngx, dem Internet Archive oder
-Artifex.
+PDF MRC ist ein unabhängiges Projekt und steht in keiner Verbindung zu Paperless-ngx, dem Internet Archive oder Artifex.
