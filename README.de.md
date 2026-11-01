@@ -160,6 +160,8 @@ Deutsch (`ci/test_app.py`), Sprach-Download, Senden an einen nachgebauten Paperl
 (`ci/test_paperless.py`), Bildschirmfotos und ein echtes Sparkle-Update (`ci/test_update.sh`). Ein zweiter Job testet
 den Homebrew-Installer. `ci/check_strings.py` prüft, dass jeder Text übersetzt ist.
 
+**Release-Notizen** kommen aus [CHANGELOG.md](CHANGELOG.md): eine Zeile je für Nutzer sichtbarer Änderung unter *Unreleased*, auf Englisch (die CI lehnt deutschen Text und ein Release ohne Einträge ab). Nach dem Veröffentlichen verschiebt der Workflow die Einträge unter die neue Version.
+
 **Releases:** *Actions → macOS → Run workflow*, *Patch*, *Minor* oder *Major* wählen – die nächste Nummer wird aus dem letzten Tag berechnet und steht in der Zusammenfassung jedes Laufs (oder eine bestimmte Version eintragen). `build/release.sh` signiert das DMG
 für Sparkle (Secret `SPARKLE_PRIVATE_KEY`), schreibt `appcast.xml`, lädt die Quellarchive der mitgelieferten
 Copyleft-Komponenten ins Release `third-party-sources` und veröffentlicht das Release. Installierte Apps finden Updates

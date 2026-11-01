@@ -76,6 +76,12 @@ jobs:
       - name: Übersetzungen prüfen
         run: python3 ci/check_strings.py
 
+      # Release-Notizen kommen aus CHANGELOG.md (nur Englisch); bei einem Release muss „Unreleased“ Einträge haben
+      - name: Changelog prüfen
+        run: |
+          if [[ -n "${RELEASE_TAG:-}" || "$GITHUB_REF" == refs/tags/v* ]]; then python3 ci/check_changelog.py --notes
+          else python3 ci/check_changelog.py; fi
+
       - name: Swift prüfen (schnell)
         run: xcrun swiftc -swift-version 5 -parse-as-library -target arm64-apple-macos13.0 -typecheck App/Sources/*.swift
 

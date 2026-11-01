@@ -153,6 +153,8 @@ with Homebrew hidden, then tested end to end with its own Python – context men
 screenshots and a real Sparkle update (`ci/test_update.sh`). A second job tests the Homebrew installer.
 `ci/check_strings.py` checks that every text is translated.
 
+**Release notes** come from [CHANGELOG.md](CHANGELOG.md): one line per user-visible change under *Unreleased*, in English (CI rejects German text and a release without entries). After publishing, the workflow moves the entries under the new version.
+
 **Releases:** *Actions → macOS → Run workflow*, choose *Patch*, *Minor* or *Major* – the next number is computed from the last tag and shown in the summary of every run (or enter a specific version). `build/release.sh` signs the DMG for
 Sparkle (secret `SPARKLE_PRIVATE_KEY`), writes `appcast.xml`, uploads the source archives of the bundled copyleft
 components to the release `third-party-sources` and publishes the release. Installed apps find updates via

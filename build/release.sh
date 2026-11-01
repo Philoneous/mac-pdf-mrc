@@ -36,9 +36,8 @@ public_in_app="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$APP/Content
 [[ "$(python3 build/ed25519_public.py)" == "$public_in_app" ]] \
   || die "SPARKLE_PRIVATE_KEY passt nicht zu SUPublicEDKey der App."
 
-# Änderungen seit dem letzten Tag als Release-Notizen
-previous="$(git describe --tags --abbrev=0 --match 'v*' "$TAG^" 2>/dev/null || true)"
-git log --no-merges --format='- %s' "${previous:+$previous..}$TAG" | head -n 40 > dist/notes.md
+# Release-Notizen: Abschnitt „Unreleased“ aus CHANGELOG.md (englisch, von ci/check_changelog.py geprüft)
+python3 ci/check_changelog.py --notes > dist/notes.md
 
 python3 build/appcast.py --version "$VERSION" --build "$build_number" \
   --url "https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/PDF-MRC.dmg" \
@@ -52,9 +51,7 @@ LICENSES="$APP/Contents/Resources/Licenses"
 SOURCES_TAG="third-party-sources"
 if ! gh release view "$SOURCES_TAG" >/dev/null 2>&1; then
   gh release create "$SOURCES_TAG" --target "$GITHUB_SHA" --latest=false --title "Third-party source code" \
-    --notes "Source code of the components under copyleft licenses (AGPL-3.0, MPL-2.0 and others) bundled in PDF MRC, exactly as used for the builds. Which archive belongs to which app version: Contents/Resources/Licenses/THIRD-PARTY-NOTICES.txt and sources.json in the app (with SHA-256 checksums).
-
-Quellcode der in PDF MRC enthaltenen Komponenten unter Copyleft-Lizenzen (AGPL-3.0, MPL-2.0 u. a.), genau wie für die Builds verwendet. Zuordnung zu den App-Versionen: THIRD-PARTY-NOTICES.txt und sources.json im App-Paket."
+    --notes "Source code of the components under copyleft licenses (AGPL-3.0, MPL-2.0 and others) bundled in PDF MRC, exactly as used for the builds. Which archive belongs to which app version: Contents/Resources/Licenses/THIRD-PARTY-NOTICES.txt and sources.json in the app (with SHA-256 checksums)."
 fi
 existing="$(gh release view "$SOURCES_TAG" --json assets --jq '.assets[].name')"
 python3 -c 'import json, sys; [print(s["url"], s["sha256"], s["filename"], sep="\t") for s in json.load(open(sys.argv[1]))]' \
@@ -73,27 +70,37 @@ done < dist/sources.tsv
 cp "$LICENSES/THIRD-PARTY-NOTICES.txt" dist/THIRD-PARTY-NOTICES.txt
 
 {
-  echo "**Installation:** \`PDF-MRC.dmg\` laden, öffnen, „PDF MRC“ in „Programme“ ziehen. Beim ersten Start:"
-  echo "Systemeinstellungen → Datenschutz & Sicherheit → „Dennoch öffnen“ (die App ist nicht notarisiert)."
-  echo "Bestehende Installationen aktualisieren sich automatisch."
-  echo
-  echo "**Install:** download \`PDF-MRC.dmg\`, open it, drag “PDF MRC” to Applications. On first launch: System"
+  echo "**Install:** download \`PDF-MRC.dmg\`, open it and drag “PDF MRC” to Applications. On first launch: System"
   echo "Settings → Privacy & Security → “Open Anyway” (the app is not notarized). Existing installations update themselves."
   echo
-  echo "### Änderungen / Changes"
+  echo "### Changes"
   cat dist/notes.md
   echo
-  echo "☕ PDF MRC ist kostenlos. Wer die Entwicklung unterstützen möchte: / PDF MRC is free. To support its development:"
-  echo "https://ko-fi.com/Philoneous"
+  echo "☕ PDF MRC is free. To support its development: https://ko-fi.com/Philoneous"
   echo
-  echo "**Lizenzen / Licenses:** PDF MRC © Philoneous, AGPL-3.0-or-later; Quellcode: Quellcode-Archiv dieses Releases."
-  echo "Enthaltene Komponenten und ihre Lizenzen: \`THIRD-PARTY-NOTICES.txt\` (auch in der App: Info → Hinweise zu Drittkomponenten)."
-  echo "Quellcode der Copyleft-Komponenten: Release [$SOURCES_TAG](https://github.com/$GITHUB_REPOSITORY/releases/tag/$SOURCES_TAG)."
-  echo "PDF MRC © Philoneous, AGPL-3.0-or-later; source: this release's source archive. Bundled components and their"
-  echo "licenses: \`THIRD-PARTY-NOTICES.txt\` (also in the app: About → Third-party notices). Source code of the copyleft"
-  echo "components: release [$SOURCES_TAG](https://github.com/$GITHUB_REPOSITORY/releases/tag/$SOURCES_TAG)."
+  echo "**Licenses:** PDF MRC © Philoneous, AGPL-3.0-or-later; source: this release's source archive. Bundled components"
+  echo "and their licenses: \`THIRD-PARTY-NOTICES.txt\` (also in the app: About → Third-party notices). Source code of the"
+  echo "copyleft components: release [$SOURCES_TAG](https://github.com/$GITHUB_REPOSITORY/releases/tag/$SOURCES_TAG)."
 } > dist/release.md
 
 gh release create "$TAG" --target "$GITHUB_SHA" --latest "$DMG" dist/appcast.xml dist/THIRD-PARTY-NOTICES.txt \
   --title "PDF MRC $VERSION" --notes-file dist/release.md
 echo "[OK] Release $TAG veröffentlicht (Build $build_number)"
+
+# CHANGELOG.md: „Unreleased“ wird zur neuen Version (sonst stünden die Einträge im nächsten Release noch einmal).
+# Auf dem aktuellen main, damit zwischenzeitliche Commits erhalten bleiben; Fehlschlag bricht das Release nicht ab.
+rollover() {  # in einem eigenen Arbeitsverzeichnis, damit Build-Dateien im Checkout nicht stören
+  local tree="${RUNNER_TEMP:-/tmp}/changelog-rollover"
+  git worktree remove -f "$tree" 2>/dev/null || true
+  git fetch -q origin main && git worktree add -q --detach "$tree" origin/main \
+    && python3 "$tree/ci/check_changelog.py" --rollover "$VERSION" "$(date -u +%F)" "$PWD/dist/notes.md" \
+    && git -C "$tree" -c user.name="github-actions[bot]" \
+         -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+         commit -q -m "Changelog: $VERSION released" CHANGELOG.md \
+    && git -C "$tree" push -q origin HEAD:main
+}
+for attempt in 1 2 3; do
+  if rollover; then echo "[OK] CHANGELOG.md: Unreleased → $VERSION"; exit 0; fi
+  sleep 5
+done
+echo "::warning::CHANGELOG.md not updated – move the entries under 'Unreleased' to '## $VERSION – $(date -u +%F)' by hand"
