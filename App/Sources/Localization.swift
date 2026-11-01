@@ -27,6 +27,7 @@ func describeResult(_ result: [String: Any]) -> String {
         return parts.joined(separator: ", ")
     case "not_pdf": return L("not a PDF – unchanged")
     case "signed": return L("digitally signed – unchanged so the signature stays valid")
+    case "encrypted": return L("encrypted/protected – unchanged so the protection stays")
     case "no_scanned_pages": return L("no scanned pages – unchanged")
     case "mixed_disabled": return L("contains digital pages – unchanged (processing PDFs with digital pages is off)")
     case "nothing_to_compress":

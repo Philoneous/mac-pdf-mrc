@@ -318,6 +318,7 @@ final class JobCenter: ObservableObject {
         idleTimer = Timer.scheduledTimer(withTimeInterval: 8, repeats: false) { _ in
             Task { @MainActor in
                 let center = JobCenter.shared
+                center.collect()  // Auftrag kam evtl. gerade erst an (Benachrichtigung verpasst)
                 guard center.jobs.isEmpty else { return }
                 center.menuBarVisible = false
                 NSLog("PDFMRC idle; windows: %@", NSApp.windows.map { "\(type(of: $0)) visible=\($0.isVisible) main=\($0.canBecomeMain)" }.joined(separator: ", "))

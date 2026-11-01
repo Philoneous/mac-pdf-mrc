@@ -30,6 +30,31 @@ struct HistoryEntry: Codable, Identifiable, Equatable {
     var timings: [Timing] = []
     var log = ""
 
+    init(kind: JobKind, source: String, status: Status = .done) {
+        self.kind = kind
+        self.source = source
+        self.status = status
+    }
+
+    /// Fehlende Schlüssel (andere Version) erhalten den Standardwert, statt den ganzen Verlauf zu verwerfen.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        kind = try c.decode(JobKind.self, forKey: .kind)
+        source = try c.decode(String.self, forKey: .source)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        date = try c.decodeIfPresent(Date.self, forKey: .date) ?? Date()
+        output = try c.decodeIfPresent(String.self, forKey: .output)
+        status = (try? c.decodeIfPresent(Status.self, forKey: .status)) ?? .done
+        message = try c.decodeIfPresent(String.self, forKey: .message) ?? ""
+        sizeBefore = try c.decodeIfPresent(Int.self, forKey: .sizeBefore)
+        sizeAfter = try c.decodeIfPresent(Int.self, forKey: .sizeAfter)
+        pages = try c.decodeIfPresent(Int.self, forKey: .pages)
+        paperlessDocument = try c.decodeIfPresent(Int.self, forKey: .paperlessDocument)
+        paperlessURL = try c.decodeIfPresent(String.self, forKey: .paperlessURL)
+        timings = try c.decodeIfPresent([Timing].self, forKey: .timings) ?? []
+        log = try c.decodeIfPresent(String.self, forKey: .log) ?? ""
+    }
+
     var fileName: String { URL(fileURLWithPath: source).lastPathComponent }
 
     var paperlessLink: URL? {
@@ -48,11 +73,22 @@ enum History {
         .appendingPathComponent("Library/Application Support/mac-pdf-mrc")
     static let url = directory.appendingPathComponent("history.json")
 
+    /// Ein Eintrag, der sich nicht lesen lässt, wird übersprungen statt den ganzen Verlauf zu verwerfen.
+    private struct Lossy: Decodable {
+        let entry: HistoryEntry?
+        init(from decoder: Decoder) throws { entry = try? HistoryEntry(from: decoder) }
+    }
+
     static func load() -> [HistoryEntry] {
-        guard let data = try? Data(contentsOf: url) else { return [] }
+        (try? read()) ?? []
+    }
+
+    /// nil: keine Datei; wirft, wenn die Datei kein lesbarer Verlauf ist.
+    private static func read() throws -> [HistoryEntry]? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return (try? decoder.decode([HistoryEntry].self, from: data)) ?? []
+        return try decoder.decode([Lossy].self, from: data).compactMap(\.entry)
     }
 
     static func append(_ entry: HistoryEntry) {
@@ -73,7 +109,14 @@ enum History {
                 close(lock)
             }
         }
-        var entries = load()
+        var entries: [HistoryEntry]
+        do {
+            entries = try read() ?? []
+        } catch {  // unlesbare Datei beiseitelegen statt sie zu überschreiben
+            let aside = url.deletingPathExtension().appendingPathExtension("broken-\(Int(Date().timeIntervalSince1970)).json")
+            try? FileManager.default.moveItem(at: url, to: aside)
+            entries = []
+        }
         change(&entries)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601

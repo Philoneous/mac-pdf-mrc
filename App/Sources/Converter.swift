@@ -170,14 +170,23 @@ enum Converter {
         if profile.output == .replace {
             // Ergebnis erst neben das Original legen; schlägt der Papierkorb fehl, bleibt das Original
             let staged = src.deletingLastPathComponent().appendingPathComponent(".\(src.lastPathComponent).mrc-neu")
+            try? fm.removeItem(at: staged)  // Rest eines abgebrochenen früheren Laufs
             try fm.moveItem(at: work, to: staged)
+            var trashed: NSURL?
             do {
-                try fm.trashItem(at: src, resultingItemURL: nil)
+                try fm.trashItem(at: src, resultingItemURL: &trashed)
             } catch {
                 try? fm.removeItem(at: staged)
                 throw error
             }
-            try fm.moveItem(at: staged, to: src)
+            do {
+                try fm.moveItem(at: staged, to: src)
+            } catch {
+                // Original aus dem Papierkorb zurückholen, damit am alten Ort nichts fehlt
+                if let trashed = trashed as URL? { try? fm.moveItem(at: trashed, to: src) }
+                try? fm.removeItem(at: staged)
+                throw error
+            }
         } else {
             try fm.moveItem(at: work, to: dest)
         }

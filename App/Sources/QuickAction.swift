@@ -73,8 +73,12 @@ struct QuickAction {
     /// Systemsprache (der Dateiname bleibt als Kennung englisch).
     private func customize() throws {
         let workflowURL = installedURL.appendingPathComponent("Contents/document.wflow")
-        let executable = (Bundle.main.executablePath ?? "")
-            .replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
+        // Der Pfad steht im Befehl in doppelten Anführungszeichen: \ " $ ` für die Shell maskieren, dann für XML
+        var executable = Bundle.main.executablePath ?? ""
+        for character in ["\\", "\"", "$", "`"] {
+            executable = executable.replacingOccurrences(of: character, with: "\\" + character)
+        }
+        executable = executable.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;")
             .replacingOccurrences(of: ">", with: "&gt;")
         let workflow = try String(contentsOf: workflowURL, encoding: .utf8)
         try workflow.replacingOccurrences(of: "__APP_EXECUTABLE__", with: executable)
