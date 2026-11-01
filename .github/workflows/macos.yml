@@ -6,8 +6,17 @@ on:
     tags: ['v*']
   workflow_dispatch:
     inputs:
+      release:
+        description: "Release veröffentlichen? Die nächste Nummer wird aus dem letzten Tag berechnet (steht in der Zusammenfassung jedes Laufs)"
+        type: choice
+        options:
+          - nur Tests
+          - Patch (Fehlerbehebung, x.y.Z)
+          - Minor (neue Funktionen, x.Y.0)
+          - Major (große Änderung, X.0.0)
+        default: nur Tests
       version:
-        description: "Release veröffentlichen: Version, z. B. 1.0.0 (leer = nur Tests)"
+        description: "Oder eine bestimmte Version, z. B. 1.2.0 (hat Vorrang)"
         required: false
         default: ""
 
@@ -29,12 +38,34 @@ jobs:
         with:
           fetch-depth: 0  # Build-Nummer = Anzahl Commits
 
-      # Release per Knopf (Actions → macOS → Run workflow, Version eintragen): Tag nur lokal setzen, damit Build und
-      # release.sh die Version kennen; auf GitHub legt „gh release create --target“ das Tag beim Veröffentlichen an.
-      - name: Release vorbereiten
-        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+      # Nächste Versionsnummern aus dem letzten Tag v* – als Vorschlag in der Zusammenfassung jedes Laufs
+      - name: Nächste Version berechnen
+        id: next
         env:
+          RELEASE: ${{ inputs.release }}
           VERSION: ${{ inputs.version }}
+        run: |
+          last="$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sed 's/^v//' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)"
+          IFS=. read -r ma mi pa <<<"${last:-0.0.0}"
+          patch="$ma.$mi.$((pa + 1))"; minor="$ma.$((mi + 1)).0"; major="$((ma + 1)).0.0"
+          echo "### Nächste Version (letzte: ${last:-keine})" >> "$GITHUB_STEP_SUMMARY"
+          echo "Patch **$patch** · Minor **$minor** · Major **$major**" >> "$GITHUB_STEP_SUMMARY"
+          case "$RELEASE" in
+            Patch*) chosen="$patch" ;;
+            Minor*) chosen="$minor" ;;
+            Major*) chosen="$major" ;;
+            *) chosen="" ;;
+          esac
+          [[ -z "$VERSION" ]] || chosen="$VERSION"
+          echo "version=$chosen" >> "$GITHUB_OUTPUT"
+          [[ -z "$chosen" ]] || echo "Wird veröffentlicht: **v$chosen**" >> "$GITHUB_STEP_SUMMARY"
+
+      # Release per Knopf (Actions → macOS → Run workflow, Patch/Minor/Major wählen): Tag nur lokal setzen, damit Build
+      # und release.sh die Version kennen; auf GitHub legt „gh release create --target“ das Tag beim Veröffentlichen an.
+      - name: Release vorbereiten
+        if: github.event_name == 'workflow_dispatch' && steps.next.outputs.version != ''
+        env:
+          VERSION: ${{ steps.next.outputs.version }}
         run: |
           [[ "$GITHUB_REF" == refs/heads/main ]] || { echo "::error::Releases nur von main"; exit 1; }
           [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Version „${VERSION}“ ungültig (z. B. 1.0.0)"; exit 1; }
@@ -97,7 +128,7 @@ jobs:
 
       # Nur bei manuellem Start: Bildschirmfotos zusätzlich in den Branch ci-screenshots (per Git abrufbar)
       - name: Bildschirmfotos in Branch ci-screenshots
-        if: always() && github.event_name == 'workflow_dispatch' && inputs.version == ''
+        if: always() && github.event_name == 'workflow_dispatch' && steps.next.outputs.version == ''
         env:
           TOKEN: ${{ github.token }}
         run: |

@@ -158,7 +158,7 @@ Deutsch (`ci/test_app.py`), Sprach-Download, Senden an einen nachgebauten Paperl
 (`ci/test_paperless.py`), Bildschirmfotos und ein echtes Sparkle-Update (`ci/test_update.sh`). Ein zweiter Job testet
 den Homebrew-Installer. `ci/check_strings.py` prüft, dass jeder Text übersetzt ist.
 
-**Releases:** *Actions → macOS → Run workflow* mit einer Version (z. B. `1.2.0`). `build/release.sh` signiert das DMG
+**Releases:** *Actions → macOS → Run workflow*, *Patch*, *Minor* oder *Major* wählen – die nächste Nummer wird aus dem letzten Tag berechnet und steht in der Zusammenfassung jedes Laufs (oder eine bestimmte Version eintragen). `build/release.sh` signiert das DMG
 für Sparkle (Secret `SPARKLE_PRIVATE_KEY`), schreibt `appcast.xml`, lädt die Quellarchive der mitgelieferten
 Copyleft-Komponenten ins Release `third-party-sources` und veröffentlicht das Release. Installierte Apps finden Updates
 über `https://github.com/Philoneous/mac-pdf-mrc/releases/latest/download/appcast.xml`.

@@ -151,7 +151,7 @@ with Homebrew hidden, then tested end to end with its own Python – context men
 screenshots and a real Sparkle update (`ci/test_update.sh`). A second job tests the Homebrew installer.
 `ci/check_strings.py` checks that every text is translated.
 
-**Releases:** *Actions → macOS → Run workflow* with a version (e.g. `1.2.0`). `build/release.sh` signs the DMG for
+**Releases:** *Actions → macOS → Run workflow*, choose *Patch*, *Minor* or *Major* – the next number is computed from the last tag and shown in the summary of every run (or enter a specific version). `build/release.sh` signs the DMG for
 Sparkle (secret `SPARKLE_PRIVATE_KEY`), writes `appcast.xml`, uploads the source archives of the bundled copyleft
 components to the release `third-party-sources` and publishes the release. Installed apps find updates via
 `https://github.com/Philoneous/mac-pdf-mrc/releases/latest/download/appcast.xml`.
