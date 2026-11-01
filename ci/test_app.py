@@ -194,6 +194,31 @@ def main() -> None:
         assert not gone, gone
         print(f"ok: Lizenzhinweise ({len(sources)} Quellarchive), Ausdünnung")
 
+        # Zeitlimit: hängendes Tesseract → Abbruch mit Meldung, Original unverändert, kein Prozess bleibt hängen
+        tesseract = APP / "Contents/Helpers/tesseract"
+        saved = tesseract.with_name("tesseract.echt")
+        tesseract.rename(saved)
+        try:
+            tesseract.write_text("#!/bin/sh\nsleep 3600\n")
+            tesseract.chmod(0o755)
+            hang = write_scan(tmp / "haengt.pdf", [scan_image(rng)])
+            before_hash = sha(hang)
+            SETTINGS.write_text(json.dumps({"manual": profile(), "quickAction": profile()}))
+            start = time.time()
+            res = subprocess.run([str(BIN), "--kontextmenue", str(hang)], capture_output=True, text=True,
+                                 timeout=300, env={**os.environ, "PDFMRC_STALL_SECONDS": "20"})
+            print(res.stdout, res.stderr)
+            assert "No progress for 1 minutes" in res.stdout or "Minuten ohne Fortschritt" in res.stdout, res.stdout
+            assert time.time() - start < 120, time.time() - start
+            assert sha(hang) == before_hash and not (tmp / "haengt (komprimiert).pdf").exists()
+            time.sleep(1)
+            left = subprocess.run(["pgrep", "-f", "sleep 3600"], capture_output=True, text=True).stdout
+            assert not left.strip(), f"hängender Prozess übrig: {left}"
+        finally:
+            tesseract.unlink(missing_ok=True)
+            saved.rename(tesseract)
+        print("ok: Zeitlimit bei hängender Umwandlung")
+
     # Scan mit vorhandener Textebene (Scanner-OCR): nutzt pdf-to-hocr aus dem App-Paket (Startskript mit
     # richtigem Python, nicht dem Build-Ordner)
     layered = write_scan(tmp / "mit textebene.pdf", [scan_image(rng)])

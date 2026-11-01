@@ -29,6 +29,7 @@ struct Conversion {
 enum ConversionError: LocalizedError {
     case emptySuffix
     case toolMissing(String)
+    case stalled(Int)
 
     var errorDescription: String? {
         switch self {
@@ -36,6 +37,8 @@ enum ConversionError: LocalizedError {
             return L("The file name suffix must not be empty.")
         case .toolMissing(let path):
             return L("paperless-mrc not found (%@). Please reinstall the app.", path)
+        case .stalled(let minutes):
+            return L("No progress for %lld minutes – conversion stopped, file unchanged.", minutes)
         }
     }
 }
@@ -236,9 +239,78 @@ enum Converter {
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
+        let output = Output()
+        let reader = pipe.fileHandleForReading
+        reader.readabilityHandler = { handle in
+            let chunk = handle.availableData
+            if chunk.isEmpty { handle.readabilityHandler = nil } else { output.append(chunk) }
+        }
         try process.run()
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        // Zeitlimit: paperless-mrc meldet mit MRC_TIMING jede fertige Seite. Kommt so lange nichts, hängt ein
+        // Werkzeug (z. B. Tesseract) – dann den ganzen Prozessbaum beenden, damit weitere Aufträge laufen können.
+        var stalled = false
+        while process.isRunning {
+            Thread.sleep(forTimeInterval: 0.5)
+            if output.idle > stallLimit {
+                stalled = true
+                killTree(process.processIdentifier)
+                break
+            }
+        }
         process.waitUntilExit()
-        return String(decoding: data, as: UTF8.self)
+        reader.readabilityHandler = nil
+        output.append(reader.readDataToEndOfFile())
+        if stalled { throw ConversionError.stalled(max(Int(stallLimit / 60), 1)) }
+        return output.text
+    }
+
+    /// So lange darf paperless-mrc ohne jede Ausgabe laufen (normal: eine Zeile je fertiger Seite, Sekunden bis
+    /// wenige Minuten; paperless-mrc selbst bricht ein einzelnes Werkzeug nach 30 Minuten ab).
+    static let stallLimit: TimeInterval =
+        ProcessInfo.processInfo.environment["PDFMRC_STALL_SECONDS"].flatMap(Double.init) ?? 30 * 60  // Variable: CI
+
+    /// Ausgabe des Prozesses, mitgelesen auf einem anderen Thread; merkt sich die Zeit der letzten Ausgabe.
+    private final class Output: @unchecked Sendable {
+        private let lock = NSLock()
+        private var data = Data()
+        private var last = Date()
+
+        func append(_ chunk: Data) {
+            lock.lock()
+            defer { lock.unlock() }
+            data.append(chunk)
+            last = Date()
+        }
+
+        var idle: TimeInterval {
+            lock.lock()
+            defer { lock.unlock() }
+            return Date().timeIntervalSince(last)
+        }
+
+        var text: String {
+            lock.lock()
+            defer { lock.unlock() }
+            return String(decoding: data, as: UTF8.self)
+        }
+    }
+
+    /// Beendet einen Prozess samt aller Nachkommen (Python-Werker, Tesseract, recode_pdf …).
+    static func killTree(_ root: pid_t) {
+        var all: [pid_t] = []
+        var queue = [root]
+        while let pid = queue.popLast() {
+            all.append(pid)
+            let pgrep = Process()
+            pgrep.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+            pgrep.arguments = ["-P", String(pid)]
+            let out = Pipe()
+            pgrep.standardOutput = out
+            guard (try? pgrep.run()) != nil else { continue }
+            let data = out.fileHandleForReading.readDataToEndOfFile()
+            pgrep.waitUntilExit()
+            queue += String(decoding: data, as: UTF8.self).split(separator: "\n").compactMap { pid_t($0) }
+        }
+        for pid in all.reversed() { kill(pid, SIGKILL) }
     }
 }

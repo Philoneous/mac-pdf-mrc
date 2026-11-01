@@ -226,3 +226,4 @@
 "Target page size" = "Zielformat";
 "Size that implausibly large pages are scaled down to. A4: Europe and most other countries; US Letter (8.5 × 11 in): USA, Canada; US Legal (8.5 × 14 in): US legal documents. Default: A4." = "Format, auf das unplausibel große Seiten verkleinert werden. A4: Europa und die meisten anderen Länder; US Letter (8,5 × 11 Zoll): USA, Kanada; US Legal (8,5 × 14 Zoll): US-Rechtsdokumente. Standard: A4.";
 "A4 (default)" = "A4 (Standard)";
+"No progress for %lld minutes – conversion stopped, file unchanged." = "%lld Minuten ohne Fortschritt – Umwandlung abgebrochen, Datei unverändert.";
