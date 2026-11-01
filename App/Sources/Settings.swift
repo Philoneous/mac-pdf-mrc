@@ -29,11 +29,13 @@ struct Profile: Codable, Equatable {
     // Leere Seiten
     var removeBlank = true
     var blankInkPercent = 0.005
+    var blankInkContrast = 20  // Helligkeitsstufen, ab denen ein Pixel für die Leerseitenprüfung als Tinte zählt
     var blankPaperPercent = 90.0
     // Qualität und Größe
     var bgDownsample = 2
     var bgRate = 200.0
-    var fitA4 = true
+    var fitA4 = true  // unplausibel große Seiten verkleinern (Name historisch; Ziel: fitPageSize)
+    var fitPageSize = "a4"  // a4, letter, legal
     var maxDpi = 0  // 0 = aus
     var sharpen = 150  // %, 0 = aus
     var sharpenRadius = 1.5
@@ -42,6 +44,9 @@ struct Profile: Codable, Equatable {
     // Ausgabe
     var output = OutputMode.copy
     var suffix = L(" (compressed)")  // deutsch „ (komprimiert)“
+
+    /// Zielformate für die Korrektur unplausibler Seitengrößen (wie PAGE_SIZES in paperless-mrc).
+    static let pageSizes = ["a4", "letter", "legal"]
 
     init() {}
 
@@ -71,10 +76,12 @@ struct Profile: Codable, Equatable {
         vectorDpi = try value(.vectorDpi, d.vectorDpi)
         removeBlank = try value(.removeBlank, d.removeBlank)
         blankInkPercent = try value(.blankInkPercent, d.blankInkPercent)
+        blankInkContrast = try value(.blankInkContrast, d.blankInkContrast)
         blankPaperPercent = try value(.blankPaperPercent, d.blankPaperPercent)
         bgDownsample = try value(.bgDownsample, d.bgDownsample)
         bgRate = try value(.bgRate, d.bgRate)
         fitA4 = try value(.fitA4, d.fitA4)
+        fitPageSize = try value(.fitPageSize, d.fitPageSize)
         maxDpi = try value(.maxDpi, d.maxDpi)
         sharpen = try value(.sharpen, d.sharpen)
         sharpenRadius = try value(.sharpenRadius, d.sharpenRadius)
@@ -97,6 +104,8 @@ struct Profile: Codable, Equatable {
         p.vectorMinItems = c(vectorMinItems, 1, 100_000)
         p.vectorDpi = c(vectorDpi, 150, 600)
         p.blankInkPercent = c(blankInkPercent, 0, 1)
+        p.blankInkContrast = c(blankInkContrast, 10, 100)
+        if !Profile.pageSizes.contains(fitPageSize) { p.fitPageSize = "a4" }
         p.blankPaperPercent = c(blankPaperPercent, 0, 100)
         p.bgDownsample = c(bgDownsample, 1, 4)
         p.bgRate = c(bgRate, 50, 800)
@@ -130,10 +139,12 @@ struct Profile: Codable, Equatable {
             "MRC_VECTOR_DPI": String(vectorDpi),
             "MRC_REMOVE_BLANK_PAGES": flag(removeBlank),
             "MRC_BLANK_INK_PERCENT": String(blankInkPercent),
+            "MRC_BLANK_INK_CONTRAST": String(blankInkContrast),
             "MRC_BLANK_PAPER_PERCENT": String(blankPaperPercent),
             "MRC_BG_DOWNSAMPLE": String(bgDownsample),
             "MRC_BG_COMPRESSION_RATE": String(bgRate),
             "MRC_FIT_A4": flag(fitA4),
+            "MRC_FIT_PAGE_SIZE": fitPageSize,
             "MRC_MAX_DPI": String(maxDpi),
             "MRC_SHARPEN": String(sharpen),
             "MRC_SHARPEN_RADIUS": String(sharpenRadius),

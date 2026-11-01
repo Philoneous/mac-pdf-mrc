@@ -96,12 +96,14 @@ a ⓘ explanation in the app with its range and what the lower and upper end mea
 | Deskew / minimum skew / search range / minimum skew clarity | on / 0.2° / ±5° / 1.3 | 0–2° / 0.5–45° / 1–3 | Straightens skewed pages; unclear cases are left as they are |
 | **Blank pages** | | | |
 | Remove blank scanned pages | on | | e.g. empty back sides from double-sided scanning |
-| Blank below ink share | 0.005 % | 0–1 % | A page with only a page number has about 0.05 % and is kept |
+| Blank below ink share | 0.005 % | 0–1 % | A page with only a page number has about 0.01 % and is kept |
+| Ink contrast for blank | 20 levels | 10–100 | How much darker than the paper a pixel must be to count as ink; 20 keeps pale photos and faded receipts, 40 = behavior before 11/2026 |
 | Minimum paper area for blank | 90 % | 0–100 % | Protects low-contrast photos from being removed |
 | **Quality and size** | | | |
 | Background resolution | 1/2 | full – 1/4 | Text always keeps full resolution |
 | Compression rate | 200 | 50–800 | Higher = smaller; coloured areas and pictures get blotchy |
-| Correct wrong page sizes to A4 | on | | e.g. phone scans stored far larger than A4 |
+| Correct wrong page sizes | on | | e.g. phone scans stored far too large; A5, receipts and A3 plans stay as they are |
+| Target page size | A4 | A4, US Letter, US Legal | Size such pages are scaled down to |
 | Maximum resolution | off | 200–400 dpi | Downscale higher-resolution scans: faster and smaller, finest details are lost |
 | Sharpening / sharpening radius | 150 % / 1.5 | 0–300 % / 0.5–5 | Keeps faint, thin text crisp |
 | Text mask factor | 0.5 | 0.1–1.0 | Smaller = faint text also stays sharp, but more specks |

@@ -100,12 +100,14 @@ hat in der App eine ⓘ-Erklärung mit ihrem Bereich und der Bedeutung des unter
 | Schräglage begradigen / Erst ab Schräglage / Suchbereich / Mindestdeutlichkeit | an / 0,2° / ±5° / 1,3 | 0–2° / 0,5–45° / 1–3 | Begradigt schiefe Seiten; unklare Fälle bleiben, wie sie sind |
 | **Leere Seiten** | | | |
 | Leere gescannte Seiten entfernen | an | | z. B. leere Rückseiten beim beidseitigen Scannen |
-| Leer unter Tintenanteil | 0,005 % | 0–1 % | Eine Seite mit nur einer Seitenzahl hat etwa 0,05 % und bleibt |
+| Leer unter Tintenanteil | 0,005 % | 0–1 % | Eine Seite mit nur einer Seitenzahl hat etwa 0,01 % und bleibt |
+| Tintenkontrast für leer | 20 Stufen | 10–100 | Um wie viel dunkler als das Papier ein Pixel sein muss, um als Tinte zu zählen; 20 erhält blasse Fotos und verblasste Belege, 40 = Verhalten vor 11/2026 |
 | Leer nur ab Papierfläche | 90 % | 0–100 % | Schützt kontrastarme Fotos vor dem Entfernen |
 | **Qualität und Größe** | | | |
 | Hintergrundauflösung | 1/2 | voll – 1/4 | Schrift behält immer die volle Auflösung |
 | Kompressionsrate | 200 | 50–800 | Höher = kleiner; Farbflächen und Bilder werden fleckig |
-| Falsche Seitengrößen auf A4 korrigieren | an | | z. B. Handyscans, die ein Vielfaches von A4 groß gespeichert sind |
+| Falsche Seitengrößen korrigieren | an | | z. B. Handyscans, die ein Vielfaches zu groß gespeichert sind; A5, Kassenbons und A3-Pläne bleiben unverändert |
+| Zielformat | A4 | A4, US Letter, US Legal | Format, auf das solche Seiten verkleinert werden |
 | Höchstauflösung | aus | 200–400 dpi | Höher aufgelöste Scans verkleinern: schneller und kleiner, feinste Details gehen verloren |
 | Nachschärfen / Radius Nachschärfen | 150 % / 1,5 | 0–300 % / 0,5–5 | Hält blasse, dünne Schrift scharf |
 | Textmaske, Faktor | 0,5 | 0,1–1,0 | Kleiner = auch blasse Schrift bleibt scharf, aber mehr Schmutzpunkte |

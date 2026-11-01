@@ -521,7 +521,9 @@ struct ProfileForm: View {
             Section("Blank pages") {
                 Toggle(isOn: $profile.removeBlank) { TipLabel("Remove blank scanned pages", tip: "Removes scanned pages without content, e.g. empty back sides from duplex scanning. Digital pages are never removed. Default: on.") }
                 TextField(value: $profile.blankInkPercent,
-                          format: .number.precision(.fractionLength(0...4))) { TipLabel("Blank below ink share (%)", tip: "A page counts as blank if less than this share of its area is ink. Range 0–1 %: 0 = never remove a page; higher = pages with little content are removed too. A page with only a page number has about 0.05 %. Default: 0.005.") }
+                          format: .number.precision(.fractionLength(0...4))) { TipLabel("Blank below ink share (%)", tip: "A page counts as blank if less than this share of its area is ink. Range 0–1 %: 0 = never remove a page; higher = pages with little content are removed too. A page with only a page number has about 0.01 %. Default: 0.005.") }
+                    .disabled(!profile.removeBlank)
+                TextField(value: $profile.blankInkContrast, format: .number) { TipLabel("Ink contrast for blank (levels)", tip: "For the blank check, a pixel counts as ink if it is at least this many brightness levels (of 255) darker than the paper around it. Range 10–100: low = even faint content keeps a page (10: strong show-through from the back may too); high = only clear marks count (40 = behavior before November 2026: pale photos and faded receipts were removed). Measured on real scans: blank pages stay at zero even with show-through, a pale photo of a wall and faded print are recognized at 20. Default: 20.") }
                     .disabled(!profile.removeBlank)
                 TextField(value: $profile.blankPaperPercent,
                           format: .number.precision(.fractionLength(0...1))) { TipLabel("Minimum paper area for blank (%)", tip: "A page only counts as blank if at least this share of it looks like paper. Protects low-contrast photos (e.g. of a white wall) from being removed. Range 0–100 %: 0 = no protection; 100 = practically no page counts as blank. Default: 90.") }
@@ -537,7 +539,13 @@ struct ProfileForm: View {
                 LabeledContent {
                     Slider(value: $profile.bgRate, in: 50...800, step: 25)
                 } label: { TipLabel(verbatim: L("Compression rate: %lld", Int(profile.bgRate)), tip: "JPEG 2000 compression of the background layer. Range 50–800: 50 = barely compressed, large files; 800 = very small, colored areas and pictures get blotchy. Text that is part of the sharp text layer is not affected. Default: 200.") }
-                Toggle(isOn: $profile.fitA4) { TipLabel("Correct wrong page sizes to A4", tip: "Scales scanned pages with an implausible page size (e.g. phone scans stored several times larger than A4) to A4, so they display and print at a normal size. Default: on.") }
+                Toggle(isOn: $profile.fitA4) { TipLabel("Correct wrong page sizes", tip: "Scales scanned pages with an implausible page size (shorter side larger than A3, e.g. phone scans stored several times too large) down to the target size, so they display and print at a normal size. The aspect ratio is kept; normal sizes such as A5, receipts or A3 plans stay as they are. Default: on.") }
+                Picker(selection: $profile.fitPageSize) {
+                    Text("A4 (default)").tag("a4")
+                    Text(verbatim: "US Letter").tag("letter")
+                    Text(verbatim: "US Legal").tag("legal")
+                } label: { TipLabel("Target page size", tip: "Size that implausibly large pages are scaled down to. A4: Europe and most other countries; US Letter (8.5 × 11 in): USA, Canada; US Legal (8.5 × 14 in): US legal documents. Default: A4.") }
+                    .disabled(!profile.fitA4)
                 Picker(selection: $profile.maxDpi) {
                     Text("Off (default)").tag(0)
                     Text(verbatim: "200 dpi").tag(200)
